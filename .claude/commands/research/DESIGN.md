@@ -49,7 +49,7 @@ ln -s ~/.claude/commands/youtube-search/scripts/youtube_search.py \
 ---
 name: research
 description: YouTube 검색 → NotebookLM 수집/분석 → 결과 추출까지 리서치 전체 파이프라인. 키워드 기반 영상 검색, 소스 수집, AI 분석, 결과 내보내기를 하나의 워크플로우로 통합.
-argument-hint: <search|collect|analyze|export|status> [options]
+argument-hint: <run|search|collect|analyze|export|status> [options]
 allowed-tools: Read, Write, Edit, Bash(python3:*), Bash(nlm:*), Bash(date:*), Bash(mkdir:*), Bash(ln:*), mcp__notebooklm-mcp__*
 user-invocable: true
 ---
@@ -96,7 +96,7 @@ nlm login --check
 
 ### 2.3 collect.md (소스 수집)
 
-**역할:** YouTube URL 또는 웹 URL을 NotebookLM 노트북에 소스로 추가.
+**역할:** YouTube URL, 웹 URL, 로컬 파일을 NotebookLM 노트북에 소스로 추가.
 
 **실행 절차:**
 1. **노트북 확보**
@@ -111,9 +111,10 @@ nlm login --check
 3. **텍스트 소스 추가 (선택)**
    - `mcp__notebooklm-mcp__source_add(notebook_id, source_type="text", text="...", title="...")`
 4. **추가 확인**: `mcp__notebooklm-mcp__notebook_get(notebook_id)` 로 소스 수 확인
-5. **세션 기록**: `~/research-output/research_sessions.jsonl`에 세션 정보 append
+4.5. **last_session 저장**: `~/research-output/last_session.json`에 현재 세션 저장 (후속 커맨드에서 자동 참조)
+5. **세션 기록**: 소스 추가 직후 `~/research-output/research_sessions.jsonl`에 세션 정보 append (부분 실패 포함)
    ```json
-   {"notebook_id": "...", "topic": "...", "created_at": "...", "source_count": 5, "urls": ["..."]}
+   {"notebook_id": "...", "topic": "...", "created_at": "...", "updated_at": "...", "status": "collecting", "source_count": 5, "urls": ["..."], "artifacts": [], "preset": "default"}
    ```
 6. **다음 단계 안내**: "분석을 시작하려면 `/research analyze <notebook-id>` 를 실행하세요"
 
@@ -179,27 +180,31 @@ studio_create(report, report_format="Briefing Doc") → 브리핑 문서 생성
 7. **Q&A 결과 마크다운 저장**: 직전 analyze/export에서 수행한 query 결과를 정리하여 파일 저장
 8. 결과 파일 경로 안내
 
-**출력 디렉토리:** `~/research-output/` (없으면 `mkdir -p`로 자동 생성)
+**출력 디렉토리:** `~/research-output/<주제>/` (주제별 하위 디렉토리, 없으면 `mkdir -p`로 자동 생성)
+**Google Docs/Sheets 내보내기:** `--to-docs`, `--to-sheets` 옵션으로 `export_artifact` 사용
 
 **MCP 도구:**
 - `mcp__notebooklm-mcp__source_get_content` (소스 원문)
 - `mcp__notebooklm-mcp__notebook_query` (종합 분석)
 - `mcp__notebooklm-mcp__studio_status` (아티팩트 조회)
 - `mcp__notebooklm-mcp__download_artifact` (파일 다운로드)
+- `mcp__notebooklm-mcp__export_artifact` (Google Docs/Sheets 내보내기)
 
 ### 2.7 run.md (원스톱 파이프라인)
 
 **역할:** search → collect → analyze → export를 하나의 명령으로 순차 실행하는 오케스트레이터.
 
 **실행 절차:**
-1. 인자 파싱: `<주제>`, `--auto`, `--preset`, `--top`, `--notebook`
-2. 프리셋 5종: default, trend-report, competitor, learning, deep-dive
-3. 대화형 모드(기본): 각 단계 사이에 사용자 확인
-4. 자동 모드(`--auto`): 확인 없이 전체 순차 실행
+1. 인자 파싱: `<주제>`, `--auto`, `--preset`, `--top`, `--notebook`, `--lang`
+2. 프리셋 6종: default, trend-report, competitor, learning, deep-dive, presentation
+3. 대화형 모드(기본): 사용자 확인 2회 (검색 후 영상 선택, 수집 후 분석+내보내기 승인)
+4. 자동 모드(`--auto`): 확인 없이 전체 순차 실행 (직접 MCP 호출 시퀀스)
 5. 인증 갱신: collect/analyze/export 시작 전 `refresh_auth` 선제 호출
 6. 에러 3-tier: Fixable(자동복구) / Degraded(부분진행) / Fatal(중단)
+7. 프로그레스 가중치: 10/35/40/15% (검색/수집/분석/내보내기)
+8. 완료 요약: 단계별 소요시간 + NLM 웹 URL 표시
 
-**위임 구조:** run.md는 오케스트레이터. 실제 로직은 search.md/collect.md/analyze.md/export.md에 위임 (로직 중복 금지).
+**직접 오케스트레이션:** run.md는 각 Step의 MCP 호출을 직접 기술한다. 서브커맨드 .md는 독립 실행 전용(`/research search`, `/research collect` 등 개별 사용 시).
 
 **MCP 도구:** 각 서브커맨드의 MCP 도구 + `mcp__notebooklm-mcp__refresh_auth`
 
@@ -208,26 +213,33 @@ studio_create(report, report_format="Briefing Doc") → 브리핑 문서 생성
 **역할:** 현재 리서치 세션의 전체 상태를 한눈에 표시.
 
 **실행 절차:**
-1. **로컬 세션 파일 조회**: `~/research-output/research_sessions.jsonl` 읽기 (Task #3)
-2. notebook-id가 있으면 해당 노트북만, 없으면 전체 세션 표시
-3. 노트북별 정보 조회:
-   - 소스 수: `mcp__notebooklm-mcp__notebook_get(notebook_id)` 또는 `nlm source list <id>`
-   - 아티팩트 상태: `mcp__notebooklm-mcp__studio_status(notebook_id)` 또는 `nlm studio status <id>`
-   - 진행 중인 리서치: `nlm research status <id> --max-wait 0`
-4. 요약 테이블 출력:
+1. **로컬 세션 파일 조회**: `~/research-output/research_sessions.jsonl` 읽기
+   - 파일 없으면 Quick Start 온보딩 가이드 표시
+2. **시스템 정보**: `mcp__notebooklm-mcp__server_info()`로 MCP 서버 버전 표시
+3. notebook-id가 있으면 해당 노트북만, 없으면 전체 세션 표시
+4. 노트북별 정보 조회:
+   - 소스 수: `mcp__notebooklm-mcp__notebook_get(notebook_id)`
+   - 아티팩트 상태: `mcp__notebooklm-mcp__studio_status(notebook_id)`
+   - 노트북 요약: `mcp__notebooklm-mcp__notebook_describe(notebook_id)` (상세 조회 시)
+5. 요약 테이블 출력 (sessions.jsonl 확장 필드: status, updated_at, artifacts 포함):
 
 ```markdown
 ## Research Pipeline Status
 
-| 노트북 | Alias | 소스 수 | 아티팩트 | 상태 |
-|--------|-------|---------|---------|------|
-| AI 트렌드 2026 | ai-trends | 12 | report: completed, audio: in_progress | 활성 |
-| 경쟁사 분석 | competitor-x | 5 | - | 수집 완료 |
+| 노트북 | 주제 | 소스 수 | 상태 | 아티팩트 | 최종 업데이트 |
+|--------|------|---------|------|---------|-------------|
+| abc12345 | AI 트렌드 2026 | 12 | analyzing | report: completed | 2026-03-05 |
+| def67890 | 경쟁사 분석 | 5 | collecting | - | 2026-03-04 |
 ```
 
+**추가 기능:**
+- `--clean` 옵션: NOT_FOUND 노트북의 세션 기록 자동 정리
+
 **MCP 도구:**
+- `mcp__notebooklm-mcp__server_info` (버전 확인)
 - `mcp__notebooklm-mcp__notebook_list`
 - `mcp__notebooklm-mcp__notebook_get`
+- `mcp__notebooklm-mcp__notebook_describe` (상세 조회)
 - `mcp__notebooklm-mcp__studio_status`
 
 ---
@@ -327,112 +339,24 @@ query: 2초 간격
 
 ## 5. 사용 시나리오
 
-### 시나리오 1: AI 에이전트 트렌드 리서치
+상세 시나리오와 명령어 시퀀스는 `references/workflow-examples.md` 참조.
 
-사업 기획을 위해 최신 AI 에이전트 트렌드를 조사하고 요약 리포트를 생성.
-
-```bash
-# 1. YouTube에서 관련 영상 검색
-/research search AI agent 2026 trends -n 15 -d
-
-# 2. 검색 결과 중 상위 5개를 NotebookLM에 수집
-/research collect
-# → 사용자가 번호 선택 (1, 3, 5, 8, 12)
-# → 자동: notebook_create("AI Agent Trends 2026") + source_add x5
-
-# 3. AI 분석 실행
-/research analyze <notebook-id>
-# → chat_configure(goal="custom") + notebook_query("핵심 인사이트 5가지")
-# → studio_create(report, format="Briefing Doc")
-
-# 4. 결과를 마크다운으로 추출
-/research export <notebook-id>
-# → ~/research-output/ai-agent-trends_report.md 생성
-```
-
-### 시나리오 2: 경쟁사 제품 분석
-
-경쟁사의 제품 리뷰 영상을 수집하고 SWOT 분석.
-
-```bash
-# 1. 검색
-/research search "competitor-X product review" -n 10
-
-# 2. URL 직접 지정하여 수집
-/research collect https://youtube.com/watch?v=abc https://youtube.com/watch?v=def
-
-# 3. SWOT 관점 분석
-/research analyze <notebook-id>
-# → chat_configure(custom_prompt="경쟁 분석가로서 SWOT 관점...")
-# → notebook_query("강점, 약점, 기회, 위협을 SWOT 프레임워크로 분석")
-
-# 4. 내보내기
-/research export <notebook-id>
-```
-
-### 시나리오 3: 기술 학습 자료 생성
-
-특정 기술 주제에 대한 학습 자료를 자동 생성.
-
-```bash
-# 1. URL을 이미 알고 있는 경우 바로 수집
-/research collect https://youtube.com/watch?v=tutorial1 https://youtube.com/watch?v=tutorial2
-
-# 2. 다양한 학습 자료 생성
-/research analyze <notebook-id>
-# → studio_create(report, format="Study Guide")
-# → studio_create(audio, format="brief")
-
-# 3. 상태 확인
-/research status <notebook-id>
-# → report: completed, audio: in_progress
-
-# 4. 완료 후 내보내기
-/research export <notebook-id>
-# → report.md + podcast.mp3 다운로드
-```
+| 시나리오 | 핵심 플로우 | 프리셋 |
+|---------|-----------|--------|
+| AI 트렌드 리서치 | search → collect → analyze(Q&A+report) → export | `trend-report` |
+| 경쟁사 제품 분석 | collect(URL 직접) → analyze(SWOT) → export | `competitor` |
+| 기술 학습 자료 | collect → analyze(report+audio) → export | `learning` |
+| 원스톱 자동 실행 | `/research run <주제> --auto --preset <name>` | 모든 프리셋 |
 
 ---
 
 ## 6. 구현 우선순위
 
-### Phase 1: MVP (핵심 워크플로우)
+### Phase 1-2: 완료
 
-**목표:** search → collect → analyze(query만) → status 가 동작하는 최소 기능.
+Phase 1 (MVP: SKILL.md, run.md, search.md, collect.md, analyze.md, status.md) 및 Phase 2 (export.md, references/, studio_create 확장) 구현 완료.
 
-| 순서 | 파일 | 내용 | 난이도 |
-|------|------|------|--------|
-| 0 | `run.md` | 원스톱 파이프라인 오케스트레이터 (~200줄) | Medium |
-| 1 | `SKILL.md` | 라우터 (content-pipeline 패턴, ~100줄) | Low |
-| 2 | `search.md` | youtube_search.py 래핑 (~60줄) | Low |
-| 3 | `scripts/` | 심볼릭 링크 생성 | Low |
-| 4 | `collect.md` | notebook_create + source_add(wait=true) (~120줄) | Medium |
-| 5 | `analyze.md` | chat_configure + notebook_query (~100줄) | Medium |
-| 6 | `status.md` | notebook_list + research_sessions.jsonl (~80줄) | Low |
-
-**예상 파일 수:** 6개 (총 ~460줄, 500줄 제한 내)
-**MVP 완료 기준:**
-- [ ] `/research search <키워드>` 실행 시 YouTube 검색 결과 표시
-- [ ] `/research collect` 실행 시 NotebookLM 노트북 생성 + 소스 추가 + 세션 기록
-- [ ] `/research analyze <notebook-id>` 실행 시 Q&A 분석 결과 표시
-- [ ] `/research status` 실행 시 전체 세션 현황 표시
-- [ ] 인증 만료 시 자동 갱신 시도 + 수동 안내 폴백
-
-### Phase 2: 확장 (콘텐츠 생성 + 내보내기)
-
-| 순서 | 파일 | 내용 | 난이도 |
-|------|------|------|--------|
-| 7 | `analyze.md` 확장 | studio_create (report, mind_map, audio) | Medium |
-| 8 | `export.md` | source_get_content + download_artifact | Medium |
-| 9 | `references/nlm-commands.md` | 사용 MCP 도구 퀵 레퍼런스 | Low |
-| 10 | alias 관리 | `nlm alias set/get/list`로 노트북 별칭 관리 | Low |
-
-**Phase 2 완료 기준:**
-- [ ] 리포트/마인드맵/팟캐스트 생성 가능
-- [ ] 소스 원문 추출 + 종합 Q&A + 아티팩트 다운로드 가능
-- [ ] 생성 실패 시 에러 처리 (재시도/대체 제안)
-
-### Phase 3: 고급 기능
+### Phase 3: 고급 기능 (현재)
 
 | 순서 | 파일 | 내용 | 난이도 |
 |------|------|------|--------|
@@ -451,9 +375,27 @@ query: 2초 간격
 
 ### 7.1 세션 관리 (하이브리드)
 
-- **클라우드**: NotebookLM 노트북 시스템 (주 데이터, alias는 Phase 2 예정)
-- **로컬**: `~/research-output/research_sessions.jsonl` (세션 메타데이터 추적, Task #3)
+- **클라우드**: NotebookLM 노트북 시스템 (주 데이터)
+- **로컬 캐시**:
+  - `~/research-output/research_sessions.jsonl` — 전체 세션 히스토리 (확장 스키마: status, updated_at, artifacts, preset)
+  - `~/research-output/last_session.json` — 마지막 세션 빠른 참조 (analyze/export/status에서 notebook_id 자동 로드)
 - 로컬 파일은 NLM API 호출 없이 빠른 status 조회를 위한 캐시 역할
+
+#### last_session.json 스키마
+
+```json
+{
+  "notebook_id": "string",
+  "topic": "string",
+  "created_at": "ISO8601",
+  "updated_at": "ISO8601",
+  "status": "collecting|analyzing|exported",
+  "source_count": 0,
+  "urls": [],
+  "artifacts": [{"type": "report", "status": "completed"}],
+  "preset": "default"
+}
+```
 
 ### 7.2 MCP 와일드카드
 

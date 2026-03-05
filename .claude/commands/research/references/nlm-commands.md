@@ -48,7 +48,7 @@ mcp__notebooklm-mcp__notebook_create(title="리서치: <주제> - <날짜>")
 ### notebook_list
 
 ```
-mcp__notebooklm-mcp__notebook_list(max_results=20)
+mcp__notebooklm-mcp__notebook_list(max_results=100)
 ```
 
 반환: 노트북 배열 `[{ notebook_id, title, created_at }]`
@@ -67,7 +67,9 @@ mcp__notebooklm-mcp__notebook_get(notebook_id="...")
 mcp__notebooklm-mcp__notebook_query(
   notebook_id="...",
   query="핵심 인사이트 5가지를 정리해주세요",
-  conversation_id="..."    # 선택: 대화 이어가기
+  conversation_id="...",   # 선택: 대화 이어가기
+  source_ids=["..."],      # 선택: 특정 소스만 대상
+  timeout=120              # 선택: 응답 대기 시간 (초, 기본 120)
 )
 ```
 
@@ -135,7 +137,8 @@ mcp__notebooklm-mcp__source_add(
 mcp__notebooklm-mcp__source_add(
   notebook_id="...",
   source_type="drive",
-  document_id="..."
+  document_id="...",
+  doc_type="doc"          # 선택: "doc" | "slides" | "sheets" | "pdf" (기본 "doc")
 )
 ```
 
@@ -212,8 +215,10 @@ goal 옵션: `"default"`, `"learning_guide"`, `"custom"`
 mcp__notebooklm-mcp__note(
   notebook_id="...",
   action="create",       # "create" | "list" | "update" | "delete"
+  note_id="...",          # update/delete 시 필수
   title="노트 제목",
-  content="노트 내용"
+  content="노트 내용",
+  confirm=true            # delete 시 필수
 )
 ```
 
@@ -259,14 +264,20 @@ mcp__notebooklm-mcp__studio_create(
 | audio | audio_format | "deep_dive" \| "brief" \| "critique" \| "debate" |
 | audio | audio_length | "short" \| "default" \| "long" |
 | video | video_format | "explainer" \| "brief" |
-| video | visual_style | "auto_select" \| "classic" \| "whiteboard" \| "kawaii" 등 |
+| video | visual_style | "auto_select" \| "classic" \| "whiteboard" \| "kawaii" \| "colorful" \| "modern" \| "retro" \| "minimalist" \| "bold" |
+| infographic | orientation | "portrait" \| "landscape" |
+| infographic | detail_level | "simple" \| "detailed" |
+| infographic | infographic_style | "timeline" \| "comparison" \| "flowchart" \| "hierarchy" \| "statistics" \| "process" \| "geographic" \| "listicle" \| "mixed" |
 | report | report_format | "Briefing Doc" \| "Study Guide" \| "Blog Post" \| "Create Your Own" |
 | report | custom_prompt | 사용자 지정 프롬프트 |
 | slide_deck | slide_format | "detailed_deck" \| "presenter_slides" |
+| slide_deck | slide_length | 정수 (슬라이드 수) |
+| data_table | description | 테이블 설명 (필수) |
+| mind_map | title | 마인드맵 제목 |
 | quiz | question_count | 정수 (기본 2) |
 | quiz/flashcards | difficulty | "easy" \| "medium" \| "hard" |
 
-공통 옵션: `language` (BCP-47 코드), `focus_prompt` (집중 주제), `source_ids` (특정 소스만 사용)
+공통 옵션: `language` (BCP-47 코드, 기본 "ko"), `focus_prompt` (집중 주제), `source_ids` (특정 소스만 사용)
 
 ### studio_status
 
@@ -314,12 +325,14 @@ mcp__notebooklm-mcp__studio_delete(notebook_id="...", artifact_id="...", confirm
 mcp__notebooklm-mcp__download_artifact(
   notebook_id="...",
   artifact_type="report",
-  output_path="~/research-output/my_report.md"
+  artifact_id="...",       # 선택: 동일 유형 아티팩트가 여러 개일 때 특정 지정
+  output_path="~/research-output/my_report.md",
+  output_format="markdown" # 선택: "json" | "markdown" | "html" (quiz/flashcards용)
 )
 ```
 
-artifact_type: `"report"` | `"audio"` | `"video"` | `"slides"` | `"quiz"` 등
-옵션: `slide_deck_format` (`"pdf"` | `"pptx"`) - 슬라이드 덱 다운로드 포맷
+artifact_type: `"report"` | `"audio"` | `"video"` | `"slides"` | `"quiz"` | `"flashcards"` | `"mind_map"` | `"infographic"` | `"data_table"`
+옵션: `slide_deck_format` (`"pdf"` | `"pptx"`), `artifact_id` (동일 유형 복수 시), `output_format` (`"json"` | `"markdown"` | `"html"` - quiz/flashcards용)
 
 ### export_artifact
 
@@ -327,7 +340,8 @@ artifact_type: `"report"` | `"audio"` | `"video"` | `"slides"` | `"quiz"` 등
 mcp__notebooklm-mcp__export_artifact(
   notebook_id="...",
   artifact_id="...",
-  export_type="docs"    # "docs" | "sheets"
+  export_type="docs",   # "docs" | "sheets"
+  title="내보내기 제목"   # 선택: Google Docs/Sheets 문서 제목
 )
 ```
 

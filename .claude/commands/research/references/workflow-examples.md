@@ -294,3 +294,55 @@ mcp__notebooklm-mcp__studio_create(notebook_id=<id>, artifact_type="mind_map", c
 # MCP 서버 상태 확인
 mcp__notebooklm-mcp__server_info()
 ```
+
+---
+
+## 시나리오 6: 프레젠테이션 자료 생성
+
+리서치 결과를 리포트 + 슬라이드로 변환하여 발표 자료 준비.
+
+### 전체 플로우
+
+```bash
+# 원스톱 실행
+/research run AI 에이전트 활용 사례 --preset presentation --auto
+# → search → collect → analyze(report + slides) → export(report.md + slides.pptx)
+```
+
+### MCP 호출 시퀀스 (수동 실행 시)
+
+```
+# 채팅 설정 (프레젠테이션 전문가)
+mcp__notebooklm-mcp__chat_configure(
+  notebook_id=<id>,
+  goal="custom",
+  custom_prompt="프레젠테이션 전문가로서 핵심 포인트를 슬라이드로 구조화하세요",
+  response_length="longer"
+)
+
+# Q&A
+mcp__notebooklm-mcp__notebook_query(
+  notebook_id=<id>,
+  query="핵심 포인트를 슬라이드 구조로 정리해주세요"
+)
+
+# 리포트 + 슬라이드 생성 (병렬 가능)
+mcp__notebooklm-mcp__studio_create(
+  notebook_id=<id>,
+  artifact_type="report",
+  confirm=true
+)
+mcp__notebooklm-mcp__studio_create(
+  notebook_id=<id>,
+  artifact_type="slides",
+  slide_format="detailed_deck",
+  confirm=true
+)
+
+# 완료 폴링 (5초 간격)
+mcp__notebooklm-mcp__studio_status(notebook_id=<id>)
+
+# 다운로드
+mcp__notebooklm-mcp__download_artifact(notebook_id=<id>, artifact_type="report", output_path="~/research-output/presentation_report.md")
+mcp__notebooklm-mcp__download_artifact(notebook_id=<id>, artifact_type="slides", output_path="~/research-output/presentation_slides.pptx", slide_deck_format="pptx")
+```

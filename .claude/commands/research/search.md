@@ -23,14 +23,36 @@
 
 옵션 플래그를 제거한 나머지가 실제 검색 키워드이다.
 
-### 3. 검색 실행
+### 3. 검색 실행 및 저장
+
+검색을 실행하고 결과를 메타데이터와 함께 JSON으로 저장한다.
 
 ```bash
-python3 ~/.claude/commands/research/scripts/youtube_search.py "<키워드>" -n <결과수>
+mkdir -p ~/research-output
+python3 ~/.claude/commands/research/scripts/youtube_search.py "<키워드>" -n <결과수> --json > /tmp/search_raw.json
 ```
 
 최신순 정렬이 지정되면 `-d` 플래그를 추가한다.
-JSON 출력이면 `--json` 플래그를 추가한다.
+
+검색 결과를 메타데이터로 래핑하여 저장한다:
+
+```bash
+python3 -c "
+import json, datetime
+with open('/tmp/search_raw.json') as f:
+    results = json.load(f)
+wrapped = {
+    'searched_at': datetime.datetime.now().isoformat(),
+    'keyword': '<키워드>',
+    'options': {'count': <결과수>, 'sort_by_date': <true|false>},
+    'results': results
+}
+with open('$HOME/research-output/last_search.json', 'w') as f:
+    json.dump(wrapped, f, ensure_ascii=False, indent=2)
+"
+```
+
+검색 결과 JSON을 파싱하여 표시용 목록도 생성한다 (별도 실행 불필요).
 
 ### 4. 결과 표시
 
@@ -46,17 +68,6 @@ JSON 출력이면 `--json` 플래그를 추가한다.
    URL: https://youtube.com/watch?v=...
 ...
 ```
-
-### 4.5 검색 결과 저장
-
-검색 결과를 로컬에 저장하여 `/research collect`에서 활용할 수 있게 한다.
-
-```bash
-mkdir -p ~/research-output
-python3 ~/.claude/commands/research/scripts/youtube_search.py "<키워드>" -n <결과수> --json > ~/research-output/last_search.json
-```
-
-검색 실행 시 --json 출력을 별도로 저장한다. 이미 3단계에서 검색을 실행했으므로, 동일한 명령에 --json을 추가하여 파일로 저장한다.
 
 ### 5. 다음 단계 안내
 

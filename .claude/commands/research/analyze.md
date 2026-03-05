@@ -8,7 +8,10 @@
 
 `$ARGUMENTS`에서 `analyze` 이후의 텍스트를 notebook-id로 사용한다.
 
-- notebook-id가 비어있으면 사용자에게 질문: "어떤 노트북을 분석할까요? notebook-id를 입력해주세요."
+- notebook-id가 비어있으면:
+  1. `~/research-output/last_session.json` 파일이 존재하면 자동으로 notebook_id를 로드한다.
+     "마지막 세션의 노트북을 사용합니다: <topic> (<notebook_id 앞 8자리>)"
+  2. 파일이 없으면 사용자에게 질문: "어떤 노트북을 분석할까요? notebook-id를 입력해주세요."
 - notebook-id가 있으면 유효성 확인:
 
 ```
@@ -16,6 +19,30 @@ mcp__notebooklm-mcp__notebook_get(notebook_id)
 ```
 
 - 실패 시: "노트북을 찾을 수 없습니다. `/research status`로 노트북 목록을 확인해주세요." 안내 후 중단.
+
+### 1.5. 프리셋 자동 결정
+
+상위 파이프라인(run.md)에서 프리셋 정보가 전달된 경우, 분석유형 선택을 건너뛰고 자동으로 실행한다.
+
+프리셋 정보 형식:
+```
+프리셋: <preset_name>
+분석유형: <1-5 중 해당 번호>
+chat_configure: goal=<value>, custom_prompt=<value>
+아티팩트: <report|report+audio|report+quiz 등>
+```
+
+프리셋별 자동 매핑:
+| 프리셋 | 분석유형 | 실행 |
+|--------|---------|------|
+| default | 1 (Q&A) + 2 (리포트) | chat_configure → notebook_query → studio_create(report) |
+| trend-report | 1 (Q&A) + 2 (리포트) | chat_configure → notebook_query → studio_create(report) |
+| competitor | 1 (Q&A) + 2 (리포트) | chat_configure → notebook_query → studio_create(report) |
+| learning | 1 (Q&A) + 2 (리포트) + 4 (팟캐스트) | chat_configure → notebook_query → studio_create(report) + studio_create(audio) |
+| deep-dive | 5 (웹 리서치) + 1 (Q&A) + 2 (리포트) | research_start → research_import → chat_configure → notebook_query → studio_create(report) |
+| presentation | 1 (Q&A) + 2 (리포트) + 슬라이드 | chat_configure → notebook_query → studio_create(report) + studio_create(slides) |
+
+프리셋 정보가 없으면 아래 2단계(분석 유형 선택)로 진행한다.
 
 ### 2. 분석 유형 선택
 
@@ -53,11 +80,23 @@ mcp__notebooklm-mcp__chat_configure(
 ```
 mcp__notebooklm-mcp__notebook_query(
   notebook_id,
-  query="<사용자 질문 또는 기본: 핵심 인사이트 5가지를 구조화하여 요약해주세요>"
+  query="<사용자 질문 또는 기본: 핵심 인사이트 5가지를 구조화하여 요약해주세요>",
+  source_ids=["<특정 소스 ID들>"]  # 선택: 특정 소스만 분석 대상으로 지정
 )
 ```
 
-- 결과를 표시한 후, 후속 질문 여부를 확인한다.
+- 사용자가 "특정 소스만 분석해줘" 등의 요청을 하면, `notebook_get`으로 소스 목록을 보여주고 선택받은 후 `source_ids` 파라미터에 전달한다. 미지정 시 전체 소스를 대상으로 분석한다.
+- 결과를 표시한다.
+- Q&A 결과를 노트로 자동 저장한다:
+  ```
+  mcp__notebooklm-mcp__note(
+    notebook_id,
+    action="create",
+    title="<주제> 핵심 인사이트",
+    content=<Q&A 결과 텍스트>
+  )
+  ```
+- 후속 질문 여부를 확인한다.
 - 후속 질문 시 `conversation_id`를 유지하여 대화를 이어간다:
 
 ```
@@ -150,7 +189,7 @@ mcp__notebooklm-mcp__research_status(notebook_id)
 ```
 
 - 폴링 중 "웹 리서치를 진행하고 있습니다..." 진행 안내를 표시한다.
-- `studio_status`를 호출하여 상태를 확인한다. 완료되지 않았으면 약 15초 후 다시 확인한다.
+- `research_status`를 호출하여 상태를 확인한다. 완료되지 않았으면 약 15초 후 다시 확인한다.
 
 완료되면 발견된 소스 목록을 표시하고, 가져올 소스를 사용자에게 선택받는다:
 
@@ -181,6 +220,11 @@ mcp__notebooklm-mcp__notebook_query(
 )
 ```
 
+1.5. Q&A 결과를 노트로 자동 저장:
+   ```
+   mcp__notebooklm-mcp__note(notebook_id, action="create", title="<주제> 핵심 인사이트", content=<결과>)
+   ```
+
 2. 결과 표시 후 사용자에게 확인:
    "브리핑 리포트도 생성할까요? (예/아니오)"
    - "예" 시: studio_create(report) 실행
@@ -196,6 +240,26 @@ mcp__notebooklm-mcp__notebook_query(
 
 - "예" 또는 유형 번호 입력 시: 2단계(분석 유형 선택)로 돌아간다.
 - "아니오" 시: 다음 단계를 안내한다.
+
+### 5.5. 세션 업데이트
+
+분석이 완료되면 `~/research-output/last_session.json`의 `stages`에 analyze 정보를 추가한다.
+
+1. `~/research-output/last_session.json` 파일을 읽는다.
+2. `stages.analyze` 필드를 추가/업데이트한다:
+   ```json
+   {
+     "stages": {
+       "analyze": {
+         "completed_at": "<ISO8601>",
+         "types_used": [<사용한 분석 유형 번호들>],
+         "artifacts_created": ["<생성된 아티팩트 유형들: report, audio 등>"]
+       }
+     }
+   }
+   ```
+3. `status`를 `"analyzing"` → `"analyzed"`로, `updated_at`을 현재 시각으로 갱신한다.
+4. Write 도구로 파일을 저장한다.
 
 ### 6. 다음 단계 안내
 

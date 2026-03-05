@@ -15,6 +15,7 @@
 | `--preset <name>` | default | 프리셋 선택 (아래 참조) |
 | `--top <N>` | 프리셋별 | 상위 N개 영상 선택 |
 | `--notebook <id>` | (신규 생성) | 기존 노트북에 이어서 |
+| `--lang <code>` | ko | 아티팩트 언어 (BCP-47: ko, en, ja 등) |
 
 ## 인자 파싱
 
@@ -25,6 +26,7 @@
 3. `--top <N>` 추출 → 없으면 프리셋 기본값
 4. `--notebook <id>` 추출 → 없으면 신규 생성
 5. 나머지 텍스트 → `<주제>` (검색 키워드)
+6. `--lang <code>` 추출 → 없으면 `ko`
 
 주제가 비어있으면 에러: "주제를 입력해주세요. 예: `/research run AI 에이전트 트렌드`"
 
@@ -33,38 +35,35 @@
 | 프리셋 | top | chat_configure | 아티팩트 | 출력 |
 |--------|-----|----------------|---------|------|
 | `default` | 5 | goal="custom", custom_prompt="리서치 분석가로서 핵심 인사이트를 도출하세요" | report | report.md |
-| `trend-report` | 5 | goal="custom", custom_prompt="트렌드 분석가로서 시장 동향과 미래 전망을 분석하세요" | report | report.md |
+| `trend-report` | 5 | goal="custom", custom_prompt="트렌드 분석가로서 시간 순서대로 트렌드 변화를 추적하고, 시장 동향과 미래 전망을 분석하세요. 과거→현재→미래 시계열 관점을 포함하세요", `-d` 기본 활성화 | report | report.md |
 | `competitor` | 5 | goal="custom", custom_prompt="경쟁 분석가로서 SWOT 관점에서 분석하세요" | report | report.md |
-| `learning` | 3 | goal="learning_guide" | report + audio | report.md + podcast.mp3 |
+| `learning` | 3 | goal="learning_guide" | report + audio + quiz | report.md + podcast.mp3 + quiz.json |
 | `deep-dive` | 10 | goal="custom", custom_prompt="심층 리서치 분석가로서 모든 각도에서 철저히 분석하세요" + research_start | report | report.md |
+| `presentation` | 5 | goal="custom", custom_prompt="프레젠테이션 전문가로서 핵심 포인트를 슬라이드로 구조화하세요" | report + slides | report.md + slides.pptx |
 
-잘못된 프리셋 지정 시 에러: "잘못된 프리셋입니다. 사용 가능: default, trend-report, competitor, learning, deep-dive"
-
-## 인증 확인
-
-파이프라인 시작 전 인증을 확인한다:
-
-```bash
-nlm login --check
-```
-
-- 실패 시: "NotebookLM 인증이 필요합니다. `nlm login`을 실행해주세요." 안내 후 중단.
+잘못된 프리셋 지정 시 에러: "잘못된 프리셋입니다. 사용 가능: default, trend-report, competitor, learning, deep-dive, presentation"
 
 ## 대화형 모드 (기본, --auto 미지정)
 
-각 단계 사이에 사용자 확인을 받으며 진행한다. 각 서브커맨드 .md 파일의 지침을 따르되, notebook_id 등 데이터를 자동으로 전달한다.
+각 단계에서 직접 MCP 호출을 실행한다. 사용자 확인은 2회만 수행한다.
 
 ### Step 1: 검색 (search)
 
 ```
-████░░░░░░░░░░░░░░░░ 25% [Step 1/4] 검색 (search)
+██░░░░░░░░░░░░░░░░░░ 10% [Step 1/4] 검색 (search)
 ```
 
-1. 이 디렉토리의 `search.md`를 읽고 지침을 따른다.
-2. 주제를 키워드로 사용하여 검색 실행.
-3. 옵션: `-n`은 프리셋의 `top` 값 사용, `-d` (최신순) 활성화.
-4. 검색 결과를 사용자에게 표시한다.
-5. **사용자 확인**: "수집할 영상 번호를 선택하세요 (예: 1,3,5 또는 all):"
+1. `python3 ~/.claude/commands/research/scripts/youtube_search.py "<주제>" -n <top> -d --json > ~/research-output/last_search.json` 실행
+   - `trend-report` 프리셋: `-d` (최신순) 기본 활성화 (시계열 트렌드 분석을 위해 최신 영상 우선)
+2. 검색 결과 JSON을 파싱하여 번호 목록으로 표시:
+   ```
+   ## YouTube 검색 결과: "<주제>"
+
+   1. [영상 제목] - 채널명 (조회수, 업로드일)
+      URL: https://youtube.com/watch?v=...
+   2. ...
+   ```
+3. **사용자 확인 [1/2]**: "수집할 영상 번호를 선택하세요 (예: 1,3,5 또는 all):"
    - 사용자가 번호를 선택하면 해당 영상만 수집 대상으로 결정.
    - `all` 선택 시 상위 `top`개 전체.
    - 취소 시 파이프라인 중단.
@@ -72,35 +71,59 @@ nlm login --check
 ### Step 2: 수집 (collect)
 
 ```
-████████░░░░░░░░░░░░ 50% [Step 2/4] 수집 (collect)
+█████████░░░░░░░░░░░ 45% [Step 2/4] 수집 (collect)
 ```
 
 **인증 갱신**: `mcp__notebooklm-mcp__refresh_auth()` 선제 호출.
 
-1. 이 디렉토리의 `collect.md`를 읽고 지침을 따른다.
-2. Step 1에서 선택된 URL 목록을 전달한다.
-3. `--notebook <id>` 옵션이 있으면 기존 노트북 사용, 없으면 새로 생성한다.
-4. 수집 완료 후 notebook_id를 저장한다.
-5. **사용자 확인**: "수집 완료. 분석을 진행할까요? (예/아니오)"
-   - 아니오 시 중간 결과 요약 후 중단.
+1. 노트북 확보:
+   - `--notebook <id>` 옵션이 있으면 기존 노트북 사용
+   - 없으면 `date '+%Y-%m-%d'`로 날짜를 가져온 후:
+     `mcp__notebooklm-mcp__notebook_create(title="리서치: <주제> - <날짜>")`
+2. 소스 추가 (벌크 → 단건 fallback):
+   ```
+   mcp__notebooklm-mcp__source_add(notebook_id, source_type="url", urls=[...], wait=true)
+   ```
+   실패 시 각 URL을 단건으로 추가:
+   ```
+   mcp__notebooklm-mcp__source_add(notebook_id, source_type="url", url="<URL>", wait=true)
+   ```
+3. 수집 결과를 사용자에게 보고 (성공/실패 수).
+4. `~/research-output/last_session.json` 저장:
+   ```json
+   {
+     "notebook_id": "<id>",
+     "topic": "<주제>",
+     "created_at": "<ISO8601>",
+     "updated_at": "<ISO8601>",
+     "status": "collecting",
+     "source_count": <N>,
+     "urls": ["<url1>", "<url2>"],
+     "artifacts": [],
+     "preset": "<preset>"
+   }
+   ```
+5. `~/research-output/research_sessions.jsonl`에 세션 기록 append.
+6. **사용자 확인 [2/2]**: "수집 완료. 분석 + 내보내기까지 자동으로 진행할까요? (예/아니오)"
+   - 예 → Step 3 + Step 4를 확인 없이 자동 진행
+   - 아니오 → 중간 결과 요약 후 중단
 
 ### Step 3: 분석 (analyze)
 
 ```
-████████████░░░░░░░░ 75% [Step 3/4] 분석 (analyze)
+█████████████████░░░ 85% [Step 3/4] 분석 (analyze)
 ```
 
 **인증 갱신**: `mcp__notebooklm-mcp__refresh_auth()` 선제 호출.
 
-1. 이 디렉토리의 `analyze.md`를 읽고 지침을 따른다.
-2. 프리셋의 `chat_configure` 설정을 적용한다.
-3. 프리셋별 분석 실행:
-   - `default`, `trend-report`, `competitor`: Q&A 분석 + report 생성
-   - `learning`: Q&A 분석 + report + audio 생성
-   - `deep-dive`: research_start 실행 후 Q&A 분석 + report 생성
-4. studio_create 후 studio_status로 완료까지 폴링한다.
-5. **사용자 확인**: "분석 완료. 내보내기를 진행할까요? (예/아니오)"
-   - 아니오 시 중간 결과 요약 후 중단.
+1. `mcp__notebooklm-mcp__chat_configure(notebook_id, goal=<프리셋>, custom_prompt=<프리셋>, response_length="longer")`
+2. `mcp__notebooklm-mcp__notebook_query(notebook_id, query=<프리셋별 질문>)`
+3. Q&A 결과를 노트로 저장:
+   `mcp__notebooklm-mcp__note(notebook_id, action="create", title="<주제> 핵심 인사이트", content=<결과>)`
+4. 프리셋별 아티팩트 생성 (프리셋별 자동 분기 섹션 참조):
+   `mcp__notebooklm-mcp__studio_create(notebook_id, artifact_type=<프리셋별>, language=<lang>, confirm=true)`
+5. `mcp__notebooklm-mcp__studio_status(notebook_id)` 폴링 (5초 간격, 최대 300초)
+6. 완료 후 자동으로 Step 4로 진행 (Step 2에서 승인된 경우).
 
 ### Step 4: 내보내기 (export)
 
@@ -110,12 +133,12 @@ nlm login --check
 
 **인증 갱신**: `mcp__notebooklm-mcp__refresh_auth()` 선제 호출.
 
-1. 이 디렉토리의 `export.md`를 읽고 지침을 따른다.
-2. notebook_id를 전달한다.
-3. 프리셋에 따라 내보낼 아티팩트를 자동 선택한다:
-   - report 프리셋: report.md + analysis.md
-   - `learning` 프리셋: report.md + podcast.mp3 + analysis.md
-4. 파일 저장 후 완료 요약을 출력한다.
+1. `mkdir -p ~/research-output/<주제>/` (공백은 하이픈 변환)
+2. 프리셋에 따라 아티팩트 다운로드:
+   `mcp__notebooklm-mcp__download_artifact(notebook_id, artifact_type=<프리셋별>, output_path="~/research-output/<주제>/...")`
+3. Q&A 결과를 `~/research-output/<주제>/<주제>_analysis.md`로 저장 (Write 도구).
+4. `~/research-output/last_session.json` 업데이트 (status: "exported").
+5. 완료 요약 출력.
 
 ## 자동 모드 (--auto)
 
@@ -123,17 +146,30 @@ nlm login --check
 
 ### 자동 실행 시퀀스
 
-1. **검색**: `search.md` 지침에 따라 검색 → 상위 `top`개 자동 선택
+1. **검색**: `python3 ~/.claude/commands/research/scripts/youtube_search.py "<주제>" -n <top> -d --json` 실행 → 상위 `top`개 URL 추출
 2. **인증 갱신**: `mcp__notebooklm-mcp__refresh_auth()` 호출
-3. **수집**: `collect.md` 지침에 따라 노트북 생성 + 소스 추가
+3. **수집**:
+   - `mcp__notebooklm-mcp__notebook_create(title="리서치: <주제> - <날짜>")`
+   - `mcp__notebooklm-mcp__source_add(notebook_id, source_type="url", urls=[...], wait=true)`
+   - `~/research-output/last_session.json` 저장
+   - `~/research-output/research_sessions.jsonl`에 세션 기록
 4. **인증 갱신**: `mcp__notebooklm-mcp__refresh_auth()` 호출
-5. **분석**: `analyze.md` 지침에 따라 프리셋 설정 적용 + 분석 실행
+5. **분석**:
+   - `mcp__notebooklm-mcp__chat_configure(notebook_id, goal=<프리셋>, custom_prompt=<프리셋>)`
+   - `mcp__notebooklm-mcp__notebook_query(notebook_id, query=<프리셋별 질문>)`
+   - `mcp__notebooklm-mcp__studio_create(notebook_id, artifact_type=<프리셋별>, language=<lang>, confirm=true)`
+   - `mcp__notebooklm-mcp__studio_status(notebook_id)` 폴링 (5초 간격, 최대 300초)
+   - Q&A 결과를 `mcp__notebooklm-mcp__note(notebook_id, action="create", title="<주제> 핵심 인사이트", content=<결과>)`로 저장
 6. **인증 갱신**: `mcp__notebooklm-mcp__refresh_auth()` 호출
-7. **내보내기**: `export.md` 지침에 따라 아티팩트 다운로드
+7. **내보내기**:
+   - `mkdir -p ~/research-output/<주제>/`
+   - `mcp__notebooklm-mcp__download_artifact(notebook_id, artifact_type=<프리셋별>, output_path="~/research-output/<주제>/...")`
+   - Q&A 결과를 `~/research-output/<주제>/<주제>_analysis.md`로 저장
+   - `~/research-output/last_session.json` 업데이트 (status: "exported")
 
 ### 프리셋별 자동 분기
 
-**default / trend-report / competitor:**
+**default / competitor:**
 ```
 chat_configure(goal="custom", custom_prompt=<프리셋별>)
 → notebook_query("핵심 인사이트 5가지를 구조화하여 요약해주세요")
@@ -142,15 +178,38 @@ chat_configure(goal="custom", custom_prompt=<프리셋별>)
 → download_artifact(artifact_type="report")
 ```
 
+**trend-report:**
+```
+chat_configure(goal="custom", custom_prompt="트렌드 분석가로서 시간 순서대로 트렌드 변화를 추적하고...")
+→ notebook_query("이 주제의 트렌드를 시계열로 분석하고, 과거 동향/현재 상태/미래 전망을 구조화해주세요")
+→ studio_create(artifact_type="report", confirm=true)
+→ studio_status 폴링
+→ download_artifact(artifact_type="report")
+```
+검색 시 `-d` (최신순) 기본 활성화: 시간 흐름에 따른 트렌드 변화 포착.
+
 **learning:**
 ```
 chat_configure(goal="learning_guide")
 → notebook_query("이 주제의 핵심 개념을 학습 순서대로 정리해주세요")
 → studio_create(artifact_type="report", confirm=true)
 → studio_create(artifact_type="audio", confirm=true)
-→ studio_status 폴링 (report + audio)
+→ studio_create(artifact_type="quiz", question_count=5, confirm=true)
+→ studio_status 폴링 (report + audio + quiz)
 → download_artifact(artifact_type="report")
 → download_artifact(artifact_type="audio")
+→ download_artifact(artifact_type="quiz", output_format="json")
+```
+
+**presentation:**
+```
+chat_configure(goal="custom", custom_prompt="프레젠테이션 전문가로서...")
+→ notebook_query("핵심 포인트를 슬라이드 구조로 정리해주세요")
+→ studio_create(artifact_type="report", confirm=true)
+→ studio_create(artifact_type="slides", slide_format="detailed_deck", confirm=true)
+→ studio_status 폴링 (report + slides)
+→ download_artifact(artifact_type="report")
+→ download_artifact(artifact_type="slides", slide_deck_format="pptx")
 ```
 
 **deep-dive:**
@@ -166,6 +225,8 @@ chat_configure(goal="custom", custom_prompt="심층 리서치 분석가로서...
 ```
 
 ## 에러 처리 (3-tier)
+
+**우선순위**: run.md의 3-tier 에러 처리가 최상위 규칙이다. 서브커맨드(.md) 파일의 에러 처리는 독립 실행(`/research analyze` 등) 시에만 적용된다.
 
 ### Tier 1: Fixable (자동 복구)
 
@@ -193,18 +254,20 @@ chat_configure(goal="custom", custom_prompt="심층 리서치 분석가로서...
 
 ## 프로그레스 표시
 
-각 단계 전환 시 프로그레스 바를 출력한다:
+각 단계 전환 시 프로그레스 바를 출력한다 (가중치 반영):
 
 ```
-████░░░░░░░░░░░░░░░░ 25% [Step 1/4] 검색 (search)
-████████░░░░░░░░░░░░ 50% [Step 2/4] 수집 (collect)
-████████████░░░░░░░░ 75% [Step 3/4] 분석 (analyze)
+██░░░░░░░░░░░░░░░░░░ 10% [Step 1/4] 검색 (search)
+█████████░░░░░░░░░░░ 45% [Step 2/4] 수집 (collect)
+█████████████████░░░ 85% [Step 3/4] 분석 (analyze)
 ████████████████████ 100% [Step 4/4] 내보내기 (export)
 ```
 
+자동 모드에서도 동일한 가중치의 프로그레스 바를 출력한다.
+
 ## 완료 요약
 
-파이프라인 완료 시 ASCII 박스로 결과를 요약한다:
+파이프라인 완료 시 ASCII 박스로 결과를 요약한다. 각 단계의 시작/종료 시각을 기록하여 소요시간(초)을 계산한다:
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -212,11 +275,13 @@ chat_configure(goal="custom", custom_prompt="심층 리서치 분석가로서...
 ├──────────┬────────┬──────────────────────────────┤
 │ Step     │ Status │ Detail                       │
 ├──────────┼────────┼──────────────────────────────┤
-│ Search   │ DONE   │ 10개 검색                     │
-│ Collect  │ DONE   │ 5개 수집 (notebook: abc123)   │
-│ Analyze  │ DONE   │ Q&A + report                 │
-│ Export   │ DONE   │ ~/research-output/<주제>_*    │
+│ Search   │ DONE   │ 10개 검색 (12s)               │
+│ Collect  │ DONE   │ 5개 수집 (45s)                │
+│ Analyze  │ DONE   │ Q&A + report (120s)           │
+│ Export   │ DONE   │ ~/research-output/<주제>/ (8s) │
 ├──────────┴────────┴──────────────────────────────┤
+│ Total: 185s                                       │
+│ NLM: https://notebooklm.google.com/notebook/<id> │
 │ Output Files:                                    │
 │  - ~/research-output/<주제>_report.md            │
 │  - ~/research-output/<주제>_analysis.md          │
@@ -231,16 +296,9 @@ Tier 2 에러가 있었던 경우 실패 항목도 포함:
 │  - audio 생성 실패 (건너뜀)                        │
 ```
 
-## 위임 구조
+## 오케스트레이션 구조
 
-**run.md는 오케스트레이터이다.** 실제 로직은 각 서브커맨드 .md에 위임한다.
-
-- 검색 로직 → `search.md` 읽고 따른다
-- 수집 로직 → `collect.md` 읽고 따른다
-- 분석 로직 → `analyze.md` 읽고 따른다
-- 내보내기 로직 → `export.md` 읽고 따른다
-
-**로직 중복 금지**: run.md에 search/collect/analyze/export의 세부 로직을 복제하지 않는다. 프리셋 설정과 데이터 전달만 담당한다.
+**run.md = 직접 오케스트레이션** (각 Step의 MCP 호출을 직접 기술). 서브커맨드 .md = 독립 실행 전용 (`/research search`, `/research collect` 등 개별 사용 시).
 
 ## 주의사항
 
