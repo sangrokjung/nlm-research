@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <strong>키워드 하나로 YouTube 영상 검색 → Google NotebookLM AI 분석 → 마크다운 리포트 자동 생성</strong>
+  <strong>키워드 하나 → YouTube 검색 → NotebookLM AI 분석 → 팟캐스트 · 슬라이드 · 리포트 · 마인드맵 자동 생성</strong>
 </p>
 
 <p align="center">
@@ -21,16 +21,32 @@
 
 # NLM Research
 
-Claude Code 슬래시 명령어(`/research`)로 동작하는 자동 리서치 파이프라인입니다.
-YouTube에서 영상을 검색하고, Google NotebookLM에 수집하여 AI가 분석한 뒤, 마크다운 리포트로 내보냅니다.
+Claude Code 슬래시 명령어(`/research`)로 동작하는 **NotebookLM 콘텐츠 자동화 파이프라인**입니다.
+YouTube 영상을 검색·수집하고, Google NotebookLM의 AI가 분석하여 다양한 형태의 콘텐츠를 자동으로 생성합니다.
+
+## 🎧 NotebookLM이 만들어주는 콘텐츠
+
+NotebookLM은 단순 요약이 아닙니다. 수집한 소스를 바탕으로 **새로운 형태의 콘텐츠를 생성**합니다:
+
+| 콘텐츠 | 형식 | 설명 |
+|--------|------|------|
+| 🎧 **AI 팟캐스트** | `.mp3` | 두 명의 AI 호스트가 주제를 토론하는 오디오. 출퇴근길에 듣기 좋음 |
+| 📊 **브리핑 리포트** | `.md` | 핵심 인사이트를 구조화한 문서. 의사결정에 바로 활용 |
+| 🧠 **마인드맵** | 노트북 내 | 주제 간 관계를 시각화. 전체 그림 파악에 유용 |
+| 🎬 **프레젠테이션 슬라이드** | `.pptx` | 발표용 슬라이드 자동 생성. 바로 발표 가능 |
+| 💬 **AI Q&A** | 텍스트 | 소스 기반 질의응답. 후속 질문으로 심층 탐구 |
+| 🌐 **웹 리서치** | 소스 추가 | AI가 관련 웹 소스를 자동 발견하여 노트북에 추가 |
+
+> 이 시스템은 **검색부터 콘텐츠 다운로드까지 전 과정을 자동화**합니다.
+> 키워드만 입력하면, NotebookLM에 소스를 넣고, 원하는 콘텐츠를 생성하고, 로컬에 저장합니다.
 
 ## ✨ 주요 특징
 
-- 🔍 **원스톱 파이프라인** — 키워드 입력 하나로 검색 → 수집 → 분석 → 내보내기까지 자동 실행
-- 🎯 **6개 프리셋** — 트렌드 분석, 경쟁사 SWOT, 학습 자료, 심층 분석, 프레젠테이션 등 용도별 최적화
-- 🤖 **대화형 / 자동 모드** — 단계마다 확인받는 대화형 모드와 `--auto` 플래그로 완전 자동 실행
+- 🔍 **원스톱 파이프라인** — 키워드 하나로 검색 → 수집 → 분석 → 콘텐츠 생성 → 다운로드까지 자동
+- 🎧 **NotebookLM 콘텐츠 수확** — 팟캐스트, 슬라이드, 리포트, 마인드맵 등 NotebookLM의 모든 콘텐츠 유형 지원
+- 🎯 **6개 프리셋** — 용도에 맞는 콘텐츠 조합을 원클릭으로 (트렌드 분석, 학습 자료, 프레젠테이션 등)
+- 🤖 **대화형 / 자동 모드** — 단계마다 확인받거나 `--auto`로 완전 자동 실행
 - 🛡️ **3-Tier 에러 처리** — 인증 만료 자동 복구, 부분 실패 시 계속 진행, 치명적 오류만 중단
-- 📦 **다양한 결과물** — 마크다운 리포트, AI 팟캐스트(mp3), 퀴즈(json), 슬라이드(pptx)
 
 ## 🏗️ 아키텍처
 
@@ -99,14 +115,14 @@ claude
   <img src="assets/presets-infographic.png" alt="NLM Research Presets" width="100%">
 </p>
 
-| 프리셋 | 용도 | 수집 수 | 결과물 |
-|--------|------|---------|--------|
-| `default` | 일반 리서치 | 5개 | report.md |
-| `trend-report` | 시장 동향 / 트렌드 분석 | 5개 | report.md |
-| `competitor` | 경쟁사 SWOT 분석 | 5개 | report.md |
-| `learning` | 학습 자료 생성 | 3개 | report.md + podcast.mp3 + quiz.json |
-| `deep-dive` | 심층 분석 (웹 리서치 포함) | 10개 | report.md |
-| `presentation` | 프레젠테이션 자료 | 5개 | report.md + slides.pptx |
+| 프리셋 | 용도 | 수집 수 | 생성되는 콘텐츠 |
+|--------|------|---------|----------------|
+| `default` | 일반 리서치 | 5개 | 📊 브리핑 리포트 + 💬 Q&A 분석 |
+| `trend-report` | 시장 동향 / 트렌드 분석 | 5개 | 📊 브리핑 리포트 + 💬 Q&A 분석 |
+| `competitor` | 경쟁사 SWOT 분석 | 5개 | 📊 브리핑 리포트 + 💬 Q&A 분석 |
+| `learning` | 학습 자료 생성 | 3개 | 📊 리포트 + 🎧 AI 팟캐스트 + 💬 Q&A |
+| `deep-dive` | 심층 분석 | 10개 | 🌐 웹 리서치 + 📊 리포트 + 💬 Q&A |
+| `presentation` | 프레젠테이션 자료 | 5개 | 📊 리포트 + 🎬 슬라이드 + 💬 Q&A |
 
 ```bash
 /research run <주제> --preset <프리셋명>
@@ -131,35 +147,43 @@ claude
 
 ## 💡 사용 예시
 
-### 1. 빠른 트렌드 파악
+### 1. 빠른 트렌드 파악 — 브리핑 리포트
 
 ```bash
 /research run AI 에이전트 2026 트렌드 --auto --preset trend-report
-# → 5개 영상 자동 수집 → 트렌드 분석 리포트 → ~/research-output/ 저장
+# → 5개 영상 자동 수집 → 📊 트렌드 분석 브리핑 리포트 자동 생성
 ```
 
-### 2. 경쟁사 분석
+### 2. 경쟁사 분석 — SWOT 리포트
 
 ```bash
 /research run 경쟁사X 제품 리뷰 --preset competitor
-# → 대화형 진행: 영상 선택 → SWOT 분석 → 리포트
+# → 대화형: 영상 선택 → 📊 SWOT 분석 리포트
 ```
 
-### 3. 기술 학습 자료
+### 3. 기술 학습 — 리포트 + 팟캐스트 + 퀴즈
 
 ```bash
 /research run React 19 새로운 기능 --preset learning --auto
-# → 학습 가이드 리포트 + AI 팟캐스트(mp3) + 퀴즈(json) 자동 생성
+# → 📊 학습 가이드 리포트 + 🎧 AI 팟캐스트(mp3) + 📝 퀴즈(json)
+# 출퇴근길에 팟캐스트로 듣고, 퀴즈로 복습
 ```
 
-### 4. 기존 노트북에 추가 수집
+### 4. 발표 자료 — 리포트 + 슬라이드
+
+```bash
+/research run 2026 AI 시장 전망 --preset presentation --auto
+# → 📊 리포트 + 🎬 슬라이드(.pptx) 자동 생성. 바로 발표 가능
+```
+
+### 5. 기존 노트북에 추가 수집
 
 ```bash
 /research run 추가 키워드 --notebook <기존-notebook-id>
 # → 새 노트북 생성 없이 기존 노트북에 소스 추가 후 재분석
 ```
 
-### 5. 단계별 수동 실행
+### 6. 단계별 수동 실행
 
 ```bash
 /research search AI 에이전트           # 1. YouTube 검색
@@ -203,29 +227,29 @@ claude
 /research run AI -n 15 --top 3 --auto
 ```
 
-## 📁 결과물
+## 📁 생성되는 콘텐츠
 
-결과 파일은 `~/research-output/<주제>/`에 주제별로 저장됩니다.
+모든 결과물은 `~/research-output/<주제>/`에 주제별로 자동 저장됩니다.
 
 ```
 ~/research-output/
 ├── AI_에이전트_트렌드/
-│   ├── AI_에이전트_트렌드_report.md       # NotebookLM 브리핑 리포트
-│   ├── AI_에이전트_트렌드_analysis.md     # Q&A 종합 분석 결과
-│   ├── AI_에이전트_트렌드_podcast.mp3     # AI 팟캐스트 (learning)
-│   ├── AI_에이전트_트렌드_quiz.json       # 퀴즈 (learning)
-│   └── AI_에이전트_트렌드_slides.pptx     # 슬라이드 (presentation)
+│   ├── AI_에이전트_트렌드_report.md       # 📊 NotebookLM 브리핑 리포트
+│   ├── AI_에이전트_트렌드_analysis.md     # 💬 Q&A 종합 분석
+│   ├── AI_에이전트_트렌드_podcast.mp3     # 🎧 AI 팟캐스트
+│   ├── AI_에이전트_트렌드_quiz.json       # 📝 학습 퀴즈
+│   └── AI_에이전트_트렌드_slides.pptx     # 🎬 프레젠테이션 슬라이드
 ├── last_session.json                      # 마지막 세션 (자동 참조용)
 └── research_sessions.jsonl                # 세션 히스토리
 ```
 
-| 파일 | 내용 | 생성 프리셋 |
-|------|------|------------|
-| `*_report.md` | NotebookLM 브리핑 리포트 | 전체 |
-| `*_analysis.md` | Q&A 종합 분석 결과 | 전체 |
-| `*_podcast.mp3` | AI 팟캐스트 | learning |
-| `*_quiz.json` | 학습 퀴즈 | learning |
-| `*_slides.pptx` | 프레젠테이션 슬라이드 | presentation |
+| 콘텐츠 | 파일 형식 | 설명 | 프리셋 |
+|--------|----------|------|--------|
+| 📊 **브리핑 리포트** | `*_report.md` | NotebookLM이 소스를 종합한 구조화된 문서 | 전체 |
+| 💬 **Q&A 분석** | `*_analysis.md` | AI와의 질의응답 기반 심층 인사이트 | 전체 |
+| 🎧 **AI 팟캐스트** | `*_podcast.mp3` | 두 AI 호스트가 주제를 토론하는 오디오 콘텐츠 | learning |
+| 📝 **학습 퀴즈** | `*_quiz.json` | 소스 기반 학습 확인 퀴즈 | learning |
+| 🎬 **슬라이드** | `*_slides.pptx` | 발표용 프레젠테이션 자동 생성 | presentation |
 
 ## 🛡️ 에러 처리
 

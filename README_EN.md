@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <strong>One keyword → YouTube video search → Google NotebookLM AI analysis → Markdown report</strong>
+  <strong>One keyword → YouTube search → NotebookLM AI analysis → Podcasts · Slides · Reports · Mind Maps</strong>
 </p>
 
 <p align="center">
@@ -21,16 +21,32 @@
 
 # NLM Research
 
-An automated research pipeline powered by Claude Code slash command (`/research`).
-Searches YouTube for videos, collects them into Google NotebookLM, runs AI analysis, and exports markdown reports.
+A **NotebookLM content automation pipeline** powered by Claude Code slash command (`/research`).
+Searches YouTube for videos, collects them into Google NotebookLM, and automatically generates rich AI content.
+
+## 🎧 Content NotebookLM Creates For You
+
+NotebookLM isn't just a summarizer. It **creates entirely new content** from your collected sources:
+
+| Content | Format | Description |
+|---------|--------|-------------|
+| 🎧 **AI Podcast** | `.mp3` | Two AI hosts discuss the topic in a natural conversation. Perfect for commutes |
+| 📊 **Briefing Report** | `.md` | Structured document with key insights. Ready for decision-making |
+| 🧠 **Mind Map** | In notebook | Visual map of topic relationships. Great for big-picture understanding |
+| 🎬 **Presentation Slides** | `.pptx` | Auto-generated slide deck. Ready to present |
+| 💬 **AI Q&A** | Text | Source-grounded Q&A. Dig deeper with follow-up questions |
+| 🌐 **Web Research** | Sources added | AI discovers related web sources and adds them to your notebook |
+
+> This system **automates the entire flow** — from search to content download.
+> Just enter a keyword, and it feeds sources into NotebookLM, generates the content you want, and saves it locally.
 
 ## ✨ Key Features
 
-- 🔍 **One-stop Pipeline** — From keyword to report in a single command: search → collect → analyze → export
-- 🎯 **6 Presets** — Optimized for trend analysis, competitor SWOT, learning materials, deep-dive, presentation, and more
+- 🔍 **One-stop Pipeline** — From keyword to content in a single command: search → collect → analyze → generate → download
+- 🎧 **NotebookLM Content Harvesting** — Podcasts, slides, reports, mind maps — all NotebookLM content types supported
+- 🎯 **6 Presets** — One-click content combos for trend analysis, learning materials, presentations, and more
 - 🤖 **Interactive / Auto Mode** — Step-by-step confirmation or fully automated with `--auto` flag
 - 🛡️ **3-Tier Error Handling** — Auto-recovery for auth expiry, graceful degradation for partial failures, abort only on fatal errors
-- 📦 **Rich Outputs** — Markdown reports, AI podcasts (mp3), quizzes (json), slides (pptx)
 
 ## 🏗️ Architecture
 
@@ -99,14 +115,14 @@ claude
   <img src="assets/presets-infographic.png" alt="NLM Research Presets" width="100%">
 </p>
 
-| Preset | Purpose | Sources | Output |
-|--------|---------|---------|--------|
-| `default` | General research | 5 | report.md |
-| `trend-report` | Market trends & forecasting | 5 | report.md |
-| `competitor` | Competitor SWOT analysis | 5 | report.md |
-| `learning` | Learning materials | 3 | report.md + podcast.mp3 + quiz.json |
-| `deep-dive` | Deep analysis (incl. web research) | 10 | report.md |
-| `presentation` | Presentation materials | 5 | report.md + slides.pptx |
+| Preset | Purpose | Sources | Generated Content |
+|--------|---------|---------|-------------------|
+| `default` | General research | 5 | 📊 Briefing report + 💬 Q&A analysis |
+| `trend-report` | Market trends & forecasting | 5 | 📊 Briefing report + 💬 Q&A analysis |
+| `competitor` | Competitor SWOT analysis | 5 | 📊 Briefing report + 💬 Q&A analysis |
+| `learning` | Learning materials | 3 | 📊 Report + 🎧 AI Podcast + 💬 Q&A |
+| `deep-dive` | Deep analysis | 10 | 🌐 Web research + 📊 Report + 💬 Q&A |
+| `presentation` | Presentation materials | 5 | 📊 Report + 🎬 Slides + 💬 Q&A |
 
 ```bash
 /research run <topic> --preset <preset-name>
@@ -145,21 +161,29 @@ claude
 # → Interactive: select videos → SWOT analysis → report
 ```
 
-### 3. Learning Materials
+### 3. Learning — Report + Podcast + Quiz
 
 ```bash
 /research run React 19 new features --preset learning --auto
-# → Learning guide report + AI podcast (mp3) + quiz (json)
+# → 📊 Learning guide report + 🎧 AI podcast (mp3) + 📝 Quiz (json)
+# Listen to the podcast on your commute, review with the quiz
 ```
 
-### 4. Add to Existing Notebook
+### 4. Presentation — Report + Slides
+
+```bash
+/research run 2026 AI market outlook --preset presentation --auto
+# → 📊 Report + 🎬 Slides (.pptx). Ready to present
+```
+
+### 5. Add to Existing Notebook
 
 ```bash
 /research run additional keywords --notebook <existing-notebook-id>
 # → Add sources to existing notebook and re-analyze
 ```
 
-### 5. Step-by-step Manual Execution
+### 6. Step-by-step Manual Execution
 
 ```bash
 /research search AI agents              # 1. YouTube search
@@ -203,29 +227,29 @@ claude
 /research run AI -n 15 --top 3 --auto
 ```
 
-## 📁 Output
+## 📁 Generated Content
 
-Results are saved by topic under `~/research-output/<topic>/`.
+All outputs are automatically saved by topic under `~/research-output/<topic>/`.
 
 ```
 ~/research-output/
 ├── AI_agent_trends/
-│   ├── AI_agent_trends_report.md          # NotebookLM briefing report
-│   ├── AI_agent_trends_analysis.md        # Q&A comprehensive analysis
-│   ├── AI_agent_trends_podcast.mp3        # AI podcast (learning)
-│   ├── AI_agent_trends_quiz.json          # Quiz (learning)
-│   └── AI_agent_trends_slides.pptx        # Slides (presentation)
+│   ├── AI_agent_trends_report.md          # 📊 NotebookLM briefing report
+│   ├── AI_agent_trends_analysis.md        # 💬 Q&A comprehensive analysis
+│   ├── AI_agent_trends_podcast.mp3        # 🎧 AI podcast
+│   ├── AI_agent_trends_quiz.json          # 📝 Learning quiz
+│   └── AI_agent_trends_slides.pptx        # 🎬 Presentation slides
 ├── last_session.json                       # Last session reference
 └── research_sessions.jsonl                 # Session history
 ```
 
-| File | Content | Preset |
-|------|---------|--------|
-| `*_report.md` | NotebookLM briefing report | All |
-| `*_analysis.md` | Q&A comprehensive analysis | All |
-| `*_podcast.mp3` | AI podcast | learning |
-| `*_quiz.json` | Learning quiz | learning |
-| `*_slides.pptx` | Presentation slides | presentation |
+| Content | File Format | Description | Preset |
+|---------|------------|-------------|--------|
+| 📊 **Briefing Report** | `*_report.md` | Structured document synthesized by NotebookLM | All |
+| 💬 **Q&A Analysis** | `*_analysis.md` | Deep insights from AI Q&A sessions | All |
+| 🎧 **AI Podcast** | `*_podcast.mp3` | Two AI hosts discuss the topic in audio | learning |
+| 📝 **Quiz** | `*_quiz.json` | Source-based learning quiz | learning |
+| 🎬 **Slides** | `*_slides.pptx` | Auto-generated presentation deck | presentation |
 
 ## 🛡️ Error Handling
 
