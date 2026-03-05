@@ -1,0 +1,17 @@
+# Reviews (private)
+reviews/
+
+# Research output
+~/research-output/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
