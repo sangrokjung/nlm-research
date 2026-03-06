@@ -1,6 +1,6 @@
 <!-- hero banner -->
 <p align="center">
-  <img src="assets/hero-banner.png" alt="NLM Research - YouTube + NotebookLM AI Research Automation" width="100%">
+  <img src="assets/hero-banner.png" alt="NLM Research" width="100%">
 </p>
 
 <p align="center">
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <strong>키워드 하나 → YouTube 검색 → NotebookLM AI 분석 → 팟캐스트 · 슬라이드 · 리포트 · 마인드맵 자동 생성</strong>
+  <strong>궁금한 주제를 입력하면, YouTube 영상을 찾아서 AI가 팟캐스트·슬라이드·리포트로 만들어드립니다</strong>
 </p>
 
 <p align="center">
@@ -21,284 +21,249 @@
 
 # NLM Research
 
-Claude Code 슬래시 명령어(`/research`)로 동작하는 **NotebookLM 콘텐츠 자동화 파이프라인**입니다.
-YouTube 영상을 검색·수집하고, Google NotebookLM의 AI가 분석하여 다양한 형태의 콘텐츠를 자동으로 생성합니다.
+궁금한 주제를 입력하면, YouTube에서 관련 영상을 찾아 AI가 자동으로 분석해서 다양한 콘텐츠로 만들어주는 도구입니다.
 
-## 🎧 NotebookLM이 만들어주는 콘텐츠
+## 이런 걸 만들 수 있어요
 
-NotebookLM은 단순 요약이 아닙니다. 수집한 소스를 바탕으로 **새로운 형태의 콘텐츠를 생성**합니다:
+| 콘텐츠 | 설명 | 이럴 때 좋아요 |
+|--------|------|---------------|
+| 🎧 **AI 팟캐스트** | 두 AI 진행자가 대화하듯 설명하는 오디오 파일(.mp3) | 출퇴근길에 들으면 새 기술을 자연스럽게 익힐 수 있어요 |
+| 📊 **브리핑 리포트** | 핵심만 깔끔하게 정리한 문서(.md) | 회의 전 5분 읽기에 딱이에요 |
+| 🎬 **프레젠테이션 슬라이드** | 발표용 슬라이드(.pptx) 자동 생성 | 발표 준비 시간을 대폭 줄여줘요 |
+| 🧠 **마인드맵** | 주제 간 관계를 한눈에 보여주는 시각 자료 | 복잡한 주제의 전체 그림을 빠르게 파악할 때 |
+| 💬 **AI 질의응답** | 수집한 자료를 바탕으로 궁금한 점을 바로 물어볼 수 있어요 | 긴 영상 볼 시간 없을 때, 핵심만 빠르게 |
+| 🌐 **웹 리서치** | AI가 관련 자료를 인터넷에서 자동으로 더 찾아줘요 | 더 넓은 관점이 필요할 때 |
 
-| 콘텐츠 | 형식 | 설명 |
-|--------|------|------|
-| 🎧 **AI 팟캐스트** | `.mp3` | 두 명의 AI 호스트가 주제를 토론하는 오디오. 출퇴근길에 듣기 좋음 |
-| 📊 **브리핑 리포트** | `.md` | 핵심 인사이트를 구조화한 문서. 의사결정에 바로 활용 |
-| 🧠 **마인드맵** | 노트북 내 | 주제 간 관계를 시각화. 전체 그림 파악에 유용 |
-| 🎬 **프레젠테이션 슬라이드** | `.pptx` | 발표용 슬라이드 자동 생성. 바로 발표 가능 |
-| 💬 **AI Q&A** | 텍스트 | 소스 기반 질의응답. 후속 질문으로 심층 탐구 |
-| 🌐 **웹 리서치** | 소스 추가 | AI가 관련 웹 소스를 자동 발견하여 노트북에 추가 |
+> 이 모든 걸 **명령어 한 줄**로 자동으로 만들어줍니다.
+> 궁금한 주제만 입력하면, YouTube에서 영상을 찾고, AI가 분석하고, 원하는 형태로 만들어서 내 컴퓨터에 저장합니다.
 
-> 이 시스템은 **검색부터 콘텐츠 다운로드까지 전 과정을 자동화**합니다.
-> 키워드만 입력하면, NotebookLM에 소스를 넣고, 원하는 콘텐츠를 생성하고, 로컬에 저장합니다.
+## 이렇게 쓰면 돼요 — 시작하기
 
-## ✨ 주요 특징
+### 1단계: 설치하기
 
-- 🔍 **원스톱 파이프라인** — 키워드 하나로 검색 → 수집 → 분석 → 콘텐츠 생성 → 다운로드까지 자동
-- 🎧 **NotebookLM 콘텐츠 수확** — 팟캐스트, 슬라이드, 리포트, 마인드맵 등 NotebookLM의 모든 콘텐츠 유형 지원
-- 🎯 **6개 프리셋** — 용도에 맞는 콘텐츠 조합을 원클릭으로 (트렌드 분석, 학습 자료, 프레젠테이션 등)
-- 🤖 **대화형 / 자동 모드** — 단계마다 확인받거나 `--auto`로 완전 자동 실행
-- 🛡️ **3-Tier 에러 처리** — 인증 만료 자동 복구, 부분 실패 시 계속 진행, 치명적 오류만 중단
+이 도구들을 깔아야 해요. 각각이 하는 역할이 다릅니다.
 
-## 🏗️ 아키텍처
+| 도구 | 왜 필요한가요? | 설치 명령어 | 잘 설치됐는지 확인 |
+|------|---------------|-------------|-------------------|
+| **Claude Code** | AI 비서 프로그램 (이 도구의 두뇌 역할) | [공식 설치 가이드](https://docs.anthropic.com/claude-code) | `claude --version` |
+| **Deno** | nlm 도구를 실행하기 위한 프로그램 | `curl -fsSL https://deno.land/install.sh \| sh` | `deno --version` |
+| **nlm** | NotebookLM과 대화하기 위한 도구 | `deno install -gArf jsr:@nicholasgriffintn/notebooklm-cli` | `nlm --version` |
+| **yt-dlp** | YouTube 검색을 위한 도구 | `pip install yt-dlp` | `yt-dlp --version` |
 
-<p align="center">
-  <img src="assets/architecture.png" alt="NLM Research Architecture" width="100%">
-</p>
+### 2단계: Google 계정 연결
 
-```
-사용자 입력 (키워드)
-    │
-    ▼
-┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│  Search  │ ──▶ │ Collect  │ ──▶ │ Analyze  │ ──▶ │  Export  │
-│ YouTube  │     │ NLM 수집  │     │ NLM 분석  │     │ 파일 저장  │
-└──────────┘     └──────────┘     └──────────┘     └──────────┘
-  yt-dlp          MCP API          MCP API        MCP + CLI
-```
-
-| 구성 요소 | 역할 |
-|-----------|------|
-| **Claude Code** | 스킬 실행 엔진 (슬래시 명령어 `/research`) |
-| **yt-dlp** | YouTube 영상 검색 |
-| **NotebookLM MCP** (v0.3.19) | 노트북 생성, 소스 수집, AI 분석, 아티팩트 생성 |
-| **nlm CLI** (v0.3.19) | 인증, 아티팩트 다운로드 |
-
-## 🚀 빠른 시작
-
-### 사전 요구사항
-
-| 도구 | 설치 명령어 | 확인 |
-|------|-------------|------|
-| Claude Code | [공식 설치 가이드](https://docs.anthropic.com/claude-code) | `claude --version` |
-| Deno 2.7.3+ | `curl -fsSL https://deno.land/install.sh \| sh` | `deno --version` |
-| nlm CLI v0.3.19+ | `deno install -gArf jsr:@nicholasgriffintn/notebooklm-cli` | `nlm --version` |
-| yt-dlp | `pip install yt-dlp` | `yt-dlp --version` |
-| NotebookLM MCP | `~/.claude.json`에 MCP 서버 등록 | — |
-
-### 설치
+NotebookLM을 사용하려면 Google 로그인이 필요해요.
 
 ```bash
-# 1. 리포지토리 클론
-git clone https://github.com/sangrokjung/nlm-research.git
-cd nlm-research
-
-# 2. NotebookLM 인증 (최초 1회)
 nlm login
-# 브라우저에서 Google 계정으로 로그인
+# 브라우저가 열리면 Google 계정으로 로그인하세요
 ```
 
-### 첫 실행
+### 3단계: 첫 번째 리서치 실행
 
 ```bash
-# Claude Code 시작 (이 디렉토리에서 실행해야 /research 명령어 활성화)
-claude
+cd nlm-research  # 이 폴더에서 실행해야 해요
+claude           # AI 비서 시작
 
-# 원스톱 자동 실행
+# 이제 이렇게 입력하세요:
 /research run AI 에이전트 트렌드 --auto
-
-# 대화형 실행 (단계마다 확인)
-/research run AI 에이전트 트렌드
 ```
 
-## 🎯 프리셋
+`--auto`를 붙이면 중간에 물어보지 않고 자동으로 끝까지 진행해요. 빼면 단계마다 확인을 받아요.
+
+## 상황별 활용 가이드
 
 <p align="center">
   <img src="assets/presets-infographic.png" alt="NLM Research Presets" width="100%">
 </p>
 
-| 프리셋 | 용도 | 수집 수 | 생성되는 콘텐츠 |
-|--------|------|---------|----------------|
-| `default` | 일반 리서치 | 5개 | 📊 브리핑 리포트 + 💬 Q&A 분석 |
-| `trend-report` | 시장 동향 / 트렌드 분석 | 5개 | 📊 브리핑 리포트 + 💬 Q&A 분석 |
-| `competitor` | 경쟁사 SWOT 분석 | 5개 | 📊 브리핑 리포트 + 💬 Q&A 분석 |
-| `learning` | 학습 자료 생성 | 3개 | 📊 리포트 + 🎧 AI 팟캐스트 + 💬 Q&A |
-| `deep-dive` | 심층 분석 | 10개 | 🌐 웹 리서치 + 📊 리포트 + 💬 Q&A |
-| `presentation` | 프레젠테이션 자료 | 5개 | 📊 리포트 + 🎬 슬라이드 + 💬 Q&A |
+이런 상황이면 이걸 쓰세요:
+
+### "내일 발표인데 자료가 없어요"
 
 ```bash
-/research run <주제> --preset <프리셋명>
-
-# 예시
-/research run 경쟁사X 제품 리뷰 --preset competitor --auto
-/research run React 19 새로운 기능 --preset learning
+/research run 2026 AI 시장 전망 --preset presentation --auto
 ```
 
-## 🔄 파이프라인
+📊 브리핑 리포트 + 🎬 슬라이드(.pptx)가 자동으로 만들어져요
+
+### "새 기술 빠르게 공부하고 싶어요"
+
+```bash
+/research run React 19 새로운 기능 --preset learning --auto
+```
+
+📊 학습 가이드 + 🎧 AI 팟캐스트(mp3) + 📝 퀴즈가 만들어져요
+
+### "시장 트렌드를 파악해야 해요"
+
+```bash
+/research run AI 에이전트 2026 트렌드 --preset trend-report --auto
+```
+
+📊 트렌드 분석 브리핑 리포트가 만들어져요
+
+### "경쟁사 분석이 필요해요"
+
+```bash
+/research run 경쟁사X 제품 리뷰 --preset competitor --auto
+```
+
+📊 SWOT 분석이 포함된 경쟁 분석 리포트가 만들어져요
+
+### "주제를 깊이 파고들고 싶어요"
+
+```bash
+/research run LLM 아키텍처 비교 --preset deep-dive --auto
+```
+
+AI가 웹에서 추가 자료까지 찾아서 📊 심층 분석 리포트를 만들어요
+
+### "기본 리서치만 빠르게"
+
+```bash
+/research run AI 에이전트 --auto
+```
+
+기본: 📊 브리핑 리포트 + 💬 Q&A 분석
+
+## 자동으로 이렇게 진행돼요
+
+<p align="center">
+  <img src="assets/architecture.png" alt="NLM Research Architecture" width="100%">
+</p>
+
+도서관에서 책을 찾고 → 필요한 책을 빌려와서 → 읽고 요약하고 → 보고서로 정리하는 과정을 AI가 대신 해줍니다.
 
 <p align="center">
   <img src="assets/pipeline-flow.png" alt="NLM Research Pipeline Flow" width="100%">
 </p>
 
-| 단계 | 설명 | 도구 |
-|------|------|------|
-| 🔍 **Search** | YouTube에서 키워드 검색, 결과 목록 표시 | yt-dlp |
-| 📚 **Collect** | 선택한 영상을 NotebookLM 노트북에 소스로 수집 | MCP `source_add` |
-| 🧠 **Analyze** | AI가 수집된 소스를 분석, 리포트/팟캐스트 등 생성 | MCP `notebook_query`, `studio_create` |
-| 📤 **Export** | 분석 결과를 로컬 파일로 다운로드 | nlm CLI `download` |
+| 단계 | 하는 일 | 비유 |
+|------|---------|------|
+| 🔍 **검색** | YouTube에서 관련 영상을 찾아요 | 도서관에서 관련 책 찾기 |
+| 📚 **수집** | 찾은 영상을 NotebookLM에 넣어요 | 책을 빌려오기 |
+| 🧠 **분석** | AI가 영상 내용을 분석하고 콘텐츠를 만들어요 | 책을 읽고 요약하기 |
+| 📤 **내보내기** | 만들어진 파일을 내 컴퓨터에 저장해요 | 보고서 출력하기 |
 
-## 💡 사용 예시
+## 만들어지는 파일들
 
-### 1. 빠른 트렌드 파악 — 브리핑 리포트
-
-```bash
-/research run AI 에이전트 2026 트렌드 --auto --preset trend-report
-# → 5개 영상 자동 수집 → 📊 트렌드 분석 브리핑 리포트 자동 생성
-```
-
-### 2. 경쟁사 분석 — SWOT 리포트
-
-```bash
-/research run 경쟁사X 제품 리뷰 --preset competitor
-# → 대화형: 영상 선택 → 📊 SWOT 분석 리포트
-```
-
-### 3. 기술 학습 — 리포트 + 팟캐스트 + 퀴즈
-
-```bash
-/research run React 19 새로운 기능 --preset learning --auto
-# → 📊 학습 가이드 리포트 + 🎧 AI 팟캐스트(mp3) + 📝 퀴즈(json)
-# 출퇴근길에 팟캐스트로 듣고, 퀴즈로 복습
-```
-
-### 4. 발표 자료 — 리포트 + 슬라이드
-
-```bash
-/research run 2026 AI 시장 전망 --preset presentation --auto
-# → 📊 리포트 + 🎬 슬라이드(.pptx) 자동 생성. 바로 발표 가능
-```
-
-### 5. 기존 노트북에 추가 수집
-
-```bash
-/research run 추가 키워드 --notebook <기존-notebook-id>
-# → 새 노트북 생성 없이 기존 노트북에 소스 추가 후 재분석
-```
-
-### 6. 단계별 수동 실행
-
-```bash
-/research search AI 에이전트           # 1. YouTube 검색
-/research collect                     # 2. 선택한 영상을 NLM에 수집
-/research analyze <notebook-id>       # 3. AI 분석
-/research export <notebook-id>        # 4. 파일 내보내기
-/research status                      # 현재 세션 현황
-```
-
-## ⚙️ 옵션 상세
-
-### search 옵션
-
-| 옵션 | 설명 | 기본값 |
-|------|------|--------|
-| `-n <숫자>` | YouTube 검색 결과 수 (API에서 가져올 총 개수) | 10 |
-| `-d` | 최신순 정렬 | 비활성 |
-| `--json` | JSON 형식 출력 | 비활성 |
-
-```bash
-/research search AI 에이전트 -n 15 -d    # 최신순 15개 검색
-```
-
-### run 옵션
-
-| 옵션 | 설명 | 기본값 |
-|------|------|--------|
-| `--auto` | 확인 없이 자동 실행 | false |
-| `--preset <name>` | 프리셋 선택 | default |
-| `--top <N>` | 검색 결과 중 수집할 상위 N개 | 프리셋별 |
-| `--notebook <id>` | 기존 노트북에 추가 | 신규 생성 |
-| `--lang <code>` | 아티팩트 언어 (BCP-47) | ko |
-
-#### `-n` vs `--top` 차이
-
-- **`-n`**: `search`에서 YouTube API로 가져올 **검색 결과 총 수**
-- **`--top`**: `run`에서 검색 결과 중 실제로 NotebookLM에 **수집할 상위 영상 수**
-
-```bash
-# 15개 검색 후 상위 3개만 수집
-/research run AI -n 15 --top 3 --auto
-```
-
-## 📁 생성되는 콘텐츠
-
-모든 결과물은 `~/research-output/<주제>/`에 주제별로 자동 저장됩니다.
+모든 결과물은 `~/research-output/<주제>/` 폴더에 자동으로 저장됩니다.
 
 ```
 ~/research-output/
 ├── AI_에이전트_트렌드/
-│   ├── AI_에이전트_트렌드_report.md       # 📊 NotebookLM 브리핑 리포트
+│   ├── AI_에이전트_트렌드_report.md       # 📊 브리핑 리포트
 │   ├── AI_에이전트_트렌드_analysis.md     # 💬 Q&A 종합 분석
 │   ├── AI_에이전트_트렌드_podcast.mp3     # 🎧 AI 팟캐스트
 │   ├── AI_에이전트_트렌드_quiz.json       # 📝 학습 퀴즈
 │   └── AI_에이전트_트렌드_slides.pptx     # 🎬 프레젠테이션 슬라이드
-├── last_session.json                      # 마지막 세션 (자동 참조용)
-└── research_sessions.jsonl                # 세션 히스토리
+├── last_session.json                      # 마지막 세션 정보
+└── research_sessions.jsonl                # 세션 기록
 ```
 
-| 콘텐츠 | 파일 형식 | 설명 | 프리셋 |
-|--------|----------|------|--------|
-| 📊 **브리핑 리포트** | `*_report.md` | NotebookLM이 소스를 종합한 구조화된 문서 | 전체 |
-| 💬 **Q&A 분석** | `*_analysis.md` | AI와의 질의응답 기반 심층 인사이트 | 전체 |
-| 🎧 **AI 팟캐스트** | `*_podcast.mp3` | 두 AI 호스트가 주제를 토론하는 오디오 콘텐츠 | learning |
-| 📝 **학습 퀴즈** | `*_quiz.json` | 소스 기반 학습 확인 퀴즈 | learning |
-| 🎬 **슬라이드** | `*_slides.pptx` | 발표용 프레젠테이션 자동 생성 | presentation |
+| 파일 | 설명 | 어떤 프리셋에서 만들어지나요? |
+|------|------|----------------------------|
+| 📊 `*_report.md` | AI가 영상 내용을 종합 정리한 문서 | 모든 프리셋 |
+| 💬 `*_analysis.md` | AI에게 질문하여 얻은 심층 분석 | 모든 프리셋 |
+| 🎧 `*_podcast.mp3` | 두 AI 진행자가 대화하는 오디오 | learning |
+| 📝 `*_quiz.json` | 내용 확인용 퀴즈 | learning |
+| 🎬 `*_slides.pptx` | 발표용 슬라이드 | presentation |
 
-## 🛡️ 에러 처리
+## 더 세밀하게 조정하기
+
+### 검색 옵션
+
+```bash
+/research search AI 에이전트 -n 15 -d    # 최신순으로 15개 검색
+```
+
+| 옵션 | 설명 | 기본값 |
+|------|------|--------|
+| `-n <숫자>` | YouTube에서 가져올 검색 결과 수 | 10 |
+| `-d` | 최신순 정렬 | 꺼짐 |
+
+### 실행 옵션
+
+```bash
+/research run AI -n 15 --top 3 --auto    # 15개 검색 후 상위 3개만 수집
+```
+
+| 옵션 | 설명 | 기본값 |
+|------|------|--------|
+| `--auto` | 확인 없이 자동 실행 | 꺼짐 |
+| `--preset <이름>` | 프리셋 선택 | default |
+| `--top <N>` | 검색 결과 중 수집할 상위 N개 | 프리셋별 다름 |
+| `--notebook <id>` | 기존 노트북에 추가 수집 | 새로 만들기 |
+| `--lang <코드>` | 결과물 언어 (예: ko, en) | ko |
+
+#### `-n`과 `--top`의 차이
+
+- **`-n`**: YouTube에서 **검색 결과를 몇 개 가져올지** (넓게 훑기)
+- **`--top`**: 그중에서 **실제로 몇 개를 골라 분석할지** (좁혀서 깊게)
+
+예를 들어 `-n 15 --top 3`이면: 15개를 검색해서 보여주고, 그중 상위 3개만 골라서 AI에게 분석을 맡겨요.
+
+### 단계별 수동 실행
+
+자동 실행 대신 각 단계를 직접 진행할 수도 있어요:
+
+```bash
+/research search AI 에이전트           # 1. YouTube 검색
+/research collect                     # 2. 선택한 영상을 NotebookLM에 수집
+/research analyze <notebook-id>       # 3. AI 분석
+/research export <notebook-id>        # 4. 파일 내보내기
+/research status                      # 현재 진행 상황 확인
+```
+
+## 문제가 생기면
 
 <p align="center">
   <img src="assets/error-handling.png" alt="NLM Research Error Handling" width="100%">
 </p>
 
-시스템은 3단계 에러 처리를 적용합니다:
+대부분의 문제는 시스템이 알아서 처리합니다:
 
-| Tier | 유형 | 처리 방식 | 예시 |
-|------|------|----------|------|
-| **Tier 1** | 자동 복구 (Fixable) | 시스템이 자동으로 해결 | 인증 만료 → 자동 갱신, Rate Limit → 대기 후 재시도 |
-| **Tier 2** | 부분 진행 (Degraded) | 실패 항목 건너뛰고 계속 | 일부 URL 수집 실패, 아티팩트 생성 실패 |
-| **Tier 3** | 중단 (Fatal) | 파이프라인 중단 후 안내 | 인증 완전 실패, 수집 0건, 노트북 생성 불가 |
+| 단계 | 상황 | 어떻게 되나요? |
+|------|------|---------------|
+| 🟢 **자동 해결** | 로그인이 만료됨, 요청이 너무 많음 | 시스템이 알아서 다시 시도해요 |
+| 🟡 **건너뛰고 계속** | 일부 영상 수집 실패 | 실패한 것만 건너뛰고 나머지로 계속 진행해요 |
+| 🔴 **멈추고 안내** | 로그인 자체가 안 됨, 영상을 하나도 못 찾음 | 멈추고 어떻게 해야 하는지 알려줘요 |
 
 ### 자주 발생하는 문제
 
 | 상황 | 해결 방법 |
 |------|----------|
 | "NotebookLM 인증이 필요합니다" | 터미널에서 `nlm login` 실행 |
-| 특정 URL 수집 실패 | 비공개/삭제 영상 → 자동 건너뛰기 |
-| 리포트 생성 실패 | 소스가 너무 적거나 큼 → `/research status`로 확인 |
-| 전체 수집 0건 | 검색 키워드를 변경하여 재시도 |
+| 특정 영상 수집 실패 | 비공개/삭제된 영상이에요 — 자동으로 건너뜁니다 |
+| 리포트가 안 만들어져요 | `/research status`로 현황 확인 후 재시도 |
+| 영상을 하나도 못 찾았어요 | 검색 키워드를 바꿔서 다시 해보세요 |
 
-## 📂 프로젝트 구조
+## 프로젝트 구조
 
 ```
 nlm-research/
-├── README.md                               # 문서 (한국어)
-├── README_EN.md                            # 문서 (English)
-├── assets/                                 # 문서 이미지
+├── README.md                              # 이 문서 (한국어)
+├── README_EN.md                           # English version
+├── assets/                                # 문서에 사용된 이미지
 ├── .claude/commands/research/
-│   ├── SKILL.md                          # 라우터 (서브커맨드 분배)
-│   ├── DESIGN.md                         # 시스템 설계 문서
-│   ├── run.md                            # 원스톱 파이프라인
-│   ├── search.md                         # YouTube 검색
-│   ├── collect.md                        # NotebookLM 소스 수집
-│   ├── analyze.md                        # AI 분석
-│   ├── export.md                         # 결과 파일 내보내기
-│   ├── status.md                         # 세션 현황 조회
+│   ├── SKILL.md                         # 명령어 분배
+│   ├── DESIGN.md                        # 시스템 설계
+│   ├── run.md                           # 자동 실행
+│   ├── search.md                        # YouTube 검색
+│   ├── collect.md                       # 영상 수집
+│   ├── analyze.md                       # AI 분석
+│   ├── export.md                        # 파일 내보내기
+│   ├── status.md                        # 현황 조회
 │   ├── scripts/
-│   │   └── youtube_search.py             # YouTube 검색 스크립트
+│   │   └── youtube_search.py            # YouTube 검색 스크립트
 │   └── references/
-│       ├── nlm-commands.md               # NotebookLM MCP/CLI 레퍼런스
-│       └── workflow-examples.md          # 실전 시나리오 예시
-└── ~/research-output/                    # 결과물 저장 (자동 생성)
+│       ├── nlm-commands.md              # NotebookLM 명령어 참고
+│       └── workflow-examples.md         # 활용 예시
+└── ~/research-output/                   # 결과물 저장 (자동 생성)
 ```
 
-## 🤝 기여
+## 기여
 
 기여를 환영합니다! 다음 절차를 따라주세요:
 
@@ -308,6 +273,6 @@ nlm-research/
 4. 브랜치에 Push합니다 (`git push origin feat/amazing-feature`)
 5. Pull Request를 생성합니다
 
-## 📜 라이선스
+## 라이선스
 
 이 프로젝트는 [MIT 라이선스](LICENSE)로 배포됩니다.

@@ -1,6 +1,6 @@
 <!-- hero banner -->
 <p align="center">
-  <img src="assets/hero-banner.png" alt="NLM Research - YouTube + NotebookLM AI Research Automation" width="100%">
+  <img src="assets/hero-banner.png" alt="NLM Research" width="100%">
 </p>
 
 <p align="center">
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <strong>One keyword → YouTube search → NotebookLM AI analysis → Podcasts · Slides · Reports · Mind Maps</strong>
+  <strong>Type a topic, and AI finds YouTube videos, analyzes them, and creates podcasts, slides, and reports for you</strong>
 </p>
 
 <p align="center">
@@ -21,286 +21,258 @@
 
 # NLM Research
 
-A **NotebookLM content automation pipeline** powered by Claude Code slash command (`/research`).
-Searches YouTube for videos, collects them into Google NotebookLM, and automatically generates rich AI content.
+Type a topic you're curious about, and this tool finds related YouTube videos, has AI analyze them, and turns them into various content formats — automatically.
 
-## 🎧 Content NotebookLM Creates For You
+## What You Can Create
 
-NotebookLM isn't just a summarizer. It **creates entirely new content** from your collected sources:
+| Content | Description | Perfect for... |
+|---------|-------------|---------------|
+| 🎧 AI Podcast | Two AI hosts discuss the topic in a natural audio conversation (.mp3) | Learning on your commute — just listen and absorb |
+| 📊 Briefing Report | A clean, structured summary document (.md) | 5-minute read before a meeting |
+| 🎬 Presentation Slides | Auto-generated slide deck (.pptx) | Cutting your presentation prep time dramatically |
+| 🧠 Mind Map | Visual map showing how topics connect | Seeing the big picture of complex subjects fast |
+| 💬 AI Q&A | Ask questions about your collected sources and get instant answers | When you don't have time to watch hours of video |
+| 🌐 Web Research | AI automatically finds more related sources from the web | When you need broader perspectives |
 
-| Content | Format | Description |
-|---------|--------|-------------|
-| 🎧 **AI Podcast** | `.mp3` | Two AI hosts discuss the topic in a natural conversation. Perfect for commutes |
-| 📊 **Briefing Report** | `.md` | Structured document with key insights. Ready for decision-making |
-| 🧠 **Mind Map** | In notebook | Visual map of topic relationships. Great for big-picture understanding |
-| 🎬 **Presentation Slides** | `.pptx` | Auto-generated slide deck. Ready to present |
-| 💬 **AI Q&A** | Text | Source-grounded Q&A. Dig deeper with follow-up questions |
-| 🌐 **Web Research** | Sources added | AI discovers related web sources and adds them to your notebook |
+> All of this happens **with a single command**.
+> Just type a topic, and the system finds YouTube videos, feeds them to AI, generates your chosen content, and saves everything to your computer.
 
-> This system **automates the entire flow** — from search to content download.
-> Just enter a keyword, and it feeds sources into NotebookLM, generates the content you want, and saves it locally.
+## How to Get Started
 
-## ✨ Key Features
+### Step 1: Install the tools
 
-- 🔍 **One-stop Pipeline** — From keyword to content in a single command: search → collect → analyze → generate → download
-- 🎧 **NotebookLM Content Harvesting** — Podcasts, slides, reports, mind maps — all NotebookLM content types supported
-- 🎯 **6 Presets** — One-click content combos for trend analysis, learning materials, presentations, and more
-- 🤖 **Interactive / Auto Mode** — Step-by-step confirmation or fully automated with `--auto` flag
-- 🛡️ **3-Tier Error Handling** — Auto-recovery for auth expiry, graceful degradation for partial failures, abort only on fatal errors
+These are the building blocks that make everything work.
 
-## 🏗️ Architecture
+**Claude Code** — The AI assistant that runs everything
 
-<p align="center">
-  <img src="assets/architecture.png" alt="NLM Research Architecture" width="100%">
-</p>
-
-```
-User Input (keyword)
-    │
-    ▼
-┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│  Search  │ ──▶ │ Collect  │ ──▶ │ Analyze  │ ──▶ │  Export  │
-│ YouTube  │     │ NLM Add  │     │ NLM AI   │     │ Save File│
-└──────────┘     └──────────┘     └──────────┘     └──────────┘
-  yt-dlp          MCP API          MCP API        MCP + CLI
+Follow the [official install guide](https://docs.anthropic.com/claude-code), then verify:
+```bash
+claude --version
 ```
 
-| Component | Role |
-|-----------|------|
-| **Claude Code** | Skill execution engine (slash command `/research`) |
-| **yt-dlp** | YouTube video search |
-| **NotebookLM MCP** (v0.3.19) | Notebook creation, source collection, AI analysis, artifact generation |
-| **nlm CLI** (v0.3.19) | Authentication, artifact download |
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-| Tool | Install Command | Verify |
-|------|-----------------|--------|
-| Claude Code | [Official Guide](https://docs.anthropic.com/claude-code) | `claude --version` |
-| Deno 2.7.3+ | `curl -fsSL https://deno.land/install.sh \| sh` | `deno --version` |
-| nlm CLI v0.3.19+ | `deno install -gArf jsr:@nicholasgriffintn/notebooklm-cli` | `nlm --version` |
-| yt-dlp | `pip install yt-dlp` | `yt-dlp --version` |
-| NotebookLM MCP | Register MCP server in `~/.claude.json` | — |
-
-### Installation
+**Deno** — Required to run the nlm tool
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/sangrokjung/nlm-research.git
-cd nlm-research
+curl -fsSL https://deno.land/install.sh | sh
+deno --version    # verify
+```
 
-# 2. Authenticate with NotebookLM (one-time)
+**nlm** — Connects to Google NotebookLM
+
+```bash
+deno install -gArf jsr:@nicholasgriffintn/notebooklm-cli
+nlm --version     # verify
+```
+
+**yt-dlp** — Enables YouTube search
+
+```bash
+pip install yt-dlp
+yt-dlp --version  # verify
+```
+
+### Step 2: Connect your Google account
+
+NotebookLM needs Google sign-in. Run this once and follow the browser prompt:
+
+```bash
 nlm login
-# Log in with your Google account in the browser
 ```
 
-### First Run
+### Step 3: Run your first research
 
 ```bash
-# Start Claude Code (run from this directory to activate /research command)
-claude
+cd nlm-research   # Navigate to this folder
+claude            # Start the AI assistant
 
-# Fully automated run
+# Now type this:
 /research run AI agent trends --auto
-
-# Interactive run (confirm each step)
-/research run AI agent trends
 ```
 
-## 🎯 Presets
+Add `--auto` to run everything automatically without pausing. Remove it if you want to approve each step.
+
+## Use Case Guide
 
 <p align="center">
   <img src="assets/presets-infographic.png" alt="NLM Research Presets" width="100%">
 </p>
 
-| Preset | Purpose | Sources | Generated Content |
-|--------|---------|---------|-------------------|
-| `default` | General research | 5 | 📊 Briefing report + 💬 Q&A analysis |
-| `trend-report` | Market trends & forecasting | 5 | 📊 Briefing report + 💬 Q&A analysis |
-| `competitor` | Competitor SWOT analysis | 5 | 📊 Briefing report + 💬 Q&A analysis |
-| `learning` | Learning materials | 3 | 📊 Report + 🎧 AI Podcast + 💬 Q&A |
-| `deep-dive` | Deep analysis | 10 | 🌐 Web research + 📊 Report + 💬 Q&A |
-| `presentation` | Presentation materials | 5 | 📊 Report + 🎬 Slides + 💬 Q&A |
+Choose the scenario that fits your needs.
 
-```bash
-/research run <topic> --preset <preset-name>
-
-# Examples
-/research run competitor-X product review --preset competitor --auto
-/research run React 19 new features --preset learning
-```
-
-## 🔄 Pipeline
-
-<p align="center">
-  <img src="assets/pipeline-flow.png" alt="NLM Research Pipeline Flow" width="100%">
-</p>
-
-| Step | Description | Tool |
-|------|-------------|------|
-| 🔍 **Search** | Search YouTube by keyword, display results | yt-dlp |
-| 📚 **Collect** | Add selected videos as NotebookLM sources | MCP `source_add` |
-| 🧠 **Analyze** | AI analyzes sources, generates reports/podcasts | MCP `notebook_query`, `studio_create` |
-| 📤 **Export** | Download analysis results to local files | nlm CLI `download` |
-
-## 💡 Usage Examples
-
-### 1. Quick Trend Analysis
-
-```bash
-/research run AI agent 2026 trends --auto --preset trend-report
-# → Auto-collect 5 videos → trend analysis report → saved to ~/research-output/
-```
-
-### 2. Competitor Analysis
-
-```bash
-/research run competitor-X product review --preset competitor
-# → Interactive: select videos → SWOT analysis → report
-```
-
-### 3. Learning — Report + Podcast + Quiz
-
-```bash
-/research run React 19 new features --preset learning --auto
-# → 📊 Learning guide report + 🎧 AI podcast (mp3) + 📝 Quiz (json)
-# Listen to the podcast on your commute, review with the quiz
-```
-
-### 4. Presentation — Report + Slides
+### "I have a presentation tomorrow and no slides"
 
 ```bash
 /research run 2026 AI market outlook --preset presentation --auto
-# → 📊 Report + 🎬 Slides (.pptx). Ready to present
 ```
+You get a 📊 briefing report + 🎬 slide deck (.pptx) automatically.
 
-### 5. Add to Existing Notebook
+### "I want to learn a new technology quickly"
 
 ```bash
-/research run additional keywords --notebook <existing-notebook-id>
-# → Add sources to existing notebook and re-analyze
+/research run React 19 new features --preset learning --auto
 ```
+You get a 📊 study guide + 🎧 AI podcast (mp3) + 📝 quiz.
 
-### 6. Step-by-step Manual Execution
+### "I need to understand market trends"
 
 ```bash
-/research search AI agents              # 1. YouTube search
-/research collect                        # 2. Collect selected videos to NLM
-/research analyze <notebook-id>          # 3. AI analysis
-/research export <notebook-id>           # 4. Export files
-/research status                         # Check session status
+/research run AI agent 2026 trends --preset trend-report --auto
 ```
+You get a 📊 trend analysis briefing report.
 
-## ⚙️ Options
-
-### search Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-n <number>` | Number of YouTube search results | 10 |
-| `-d` | Sort by date (newest first) | off |
-| `--json` | JSON output format | off |
+### "I need a competitor analysis"
 
 ```bash
-/research search AI agents -n 15 -d    # Latest 15 results
+/research run competitor-X product review --preset competitor --auto
 ```
+You get a 📊 SWOT analysis report.
 
-### run Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--auto` | Run without confirmation prompts | false |
-| `--preset <name>` | Select preset | default |
-| `--top <N>` | Number of top results to collect | per preset |
-| `--notebook <id>` | Add to existing notebook | create new |
-| `--lang <code>` | Artifact language (BCP-47) | ko |
-
-#### `-n` vs `--top`
-
-- **`-n`**: Total number of **search results** fetched from YouTube API (used in `search`)
-- **`--top`**: Number of **top videos to actually collect** into NotebookLM (used in `run`)
+### "I want to go deep on a topic"
 
 ```bash
-# Search 15 results, collect top 3
-/research run AI -n 15 --top 3 --auto
+/research run LLM architecture comparison --preset deep-dive --auto
 ```
+AI finds additional web sources and creates a 📊 deep analysis report.
 
-## 📁 Generated Content
+### "Just a quick research summary"
 
-All outputs are automatically saved by topic under `~/research-output/<topic>/`.
+```bash
+/research run AI agents --auto
+```
+Default preset: 📊 briefing report + 💬 Q&A analysis.
+
+## How It Works
+
+<p align="center">
+  <img src="assets/architecture.png" alt="How NLM Research Works" width="100%">
+</p>
+
+Think of it like a research assistant: finds relevant books (search) → borrows them from the library (collect) → reads and summarizes them (analyze) → prints the report (export) — all done by AI.
+
+<p align="center">
+  <img src="assets/pipeline-flow.png" alt="Research Flow" width="100%">
+</p>
+
+| Step | What happens | Think of it as... |
+|------|-------------|-------------------|
+| 🔍 Search | Finds related YouTube videos for your topic | Finding relevant books at the library |
+| 📚 Collect | Adds those videos to NotebookLM | Borrowing the books |
+| 🧠 Analyze | AI analyzes everything and creates your outputs | Reading and summarizing |
+| 📤 Export | Saves the finished files to your computer | Printing the report |
+
+## Files You'll Get
+
+Everything is automatically saved by topic under `~/research-output/<topic>/`.
 
 ```
 ~/research-output/
 ├── AI_agent_trends/
-│   ├── AI_agent_trends_report.md          # 📊 NotebookLM briefing report
-│   ├── AI_agent_trends_analysis.md        # 💬 Q&A comprehensive analysis
-│   ├── AI_agent_trends_podcast.mp3        # 🎧 AI podcast
-│   ├── AI_agent_trends_quiz.json          # 📝 Learning quiz
-│   └── AI_agent_trends_slides.pptx        # 🎬 Presentation slides
+│   ├── AI_agent_trends_report.md          # Briefing report
+│   ├── AI_agent_trends_analysis.md        # Q&A deep analysis
+│   ├── AI_agent_trends_podcast.mp3        # AI podcast audio
+│   ├── AI_agent_trends_quiz.json          # Learning quiz
+│   └── AI_agent_trends_slides.pptx        # Presentation slides
 ├── last_session.json                       # Last session reference
 └── research_sessions.jsonl                 # Session history
 ```
 
-| Content | File Format | Description | Preset |
-|---------|------------|-------------|--------|
-| 📊 **Briefing Report** | `*_report.md` | Structured document synthesized by NotebookLM | All |
-| 💬 **Q&A Analysis** | `*_analysis.md` | Deep insights from AI Q&A sessions | All |
-| 🎧 **AI Podcast** | `*_podcast.mp3` | Two AI hosts discuss the topic in audio | learning |
-| 📝 **Quiz** | `*_quiz.json` | Source-based learning quiz | learning |
-| 🎬 **Slides** | `*_slides.pptx` | Auto-generated presentation deck | presentation |
+| File | What it is | Which presets create it |
+|------|-----------|----------------------|
+| `*_report.md` | A structured briefing document synthesized by AI | All presets |
+| `*_analysis.md` | Deep insights from AI Q&A sessions | All presets |
+| `*_podcast.mp3` | An audio conversation between two AI hosts | learning |
+| `*_quiz.json` | A quiz to test your understanding | learning |
+| `*_slides.pptx` | A ready-to-present slide deck | presentation |
 
-## 🛡️ Error Handling
+## Fine-tuning Your Research
+
+### Search options
+
+| Option | What it does | Default |
+|--------|-------------|---------|
+| `-n <number>` | How many YouTube results to fetch | 10 |
+| `-d` | Sort by newest first | off |
+
+### Run options
+
+| Option | What it does | Default |
+|--------|-------------|---------|
+| `--auto` | Run without asking for confirmation | off |
+| `--preset <name>` | Choose a preset (see Use Case Guide above) | default |
+| `--top <N>` | How many top videos to actually use | depends on preset |
+| `--notebook <id>` | Add to an existing notebook instead of creating a new one | create new |
+| `--lang <code>` | Language for generated content (e.g., `en`, `ko`) | ko |
+
+### What's the difference between `-n` and `--top`?
+
+- **`-n`** controls how many videos to **search for** on YouTube
+- **`--top`** controls how many of those videos to actually **use**
+
+```bash
+# Search 15 videos, but only use the top 3
+/research run AI -n 15 --top 3 --auto
+```
+
+### Step-by-step manual execution
+
+Instead of running everything automatically, you can run each step yourself:
+
+```bash
+/research search AI agents              # 1. Search YouTube
+/research collect                        # 2. Collect selected videos into NotebookLM
+/research analyze <notebook-id>          # 3. AI analysis
+/research export <notebook-id>           # 4. Export files
+/research status                         # Check current progress
+```
+
+## If Something Goes Wrong
 
 <p align="center">
-  <img src="assets/error-handling.png" alt="NLM Research Error Handling" width="100%">
+  <img src="assets/error-handling.png" alt="Error Handling" width="100%">
 </p>
 
-The system applies 3-tier error handling:
+The system handles problems at three levels:
 
-| Tier | Type | Action | Examples |
-|------|------|--------|----------|
-| **Tier 1** | Auto Recovery (Fixable) | System resolves automatically | Auth expired → auto-refresh, Rate limit → wait & retry |
-| **Tier 2** | Partial Progress (Degraded) | Skip failed items, continue | Some URL collection failures, artifact generation failure |
-| **Tier 3** | Abort (Fatal) | Stop pipeline, notify user | Complete auth failure, 0 sources collected, notebook creation failure |
+- 🟢 **Most issues fix themselves.** Things like expired login sessions are refreshed automatically. Rate limits are waited out and retried.
+- 🟡 **Partial failures are skipped gracefully.** If one video can't be added (maybe it's private or deleted), the system skips it and continues with the rest.
+- 🔴 **Serious problems stop the process and tell you what to do.** For example, if your login is completely broken or no videos were found at all.
 
-### Common Issues
+### Common fixes
 
-| Situation | Solution |
-|-----------|----------|
-| "NotebookLM authentication required" | Run `nlm login` in terminal |
-| Specific URL collection failure | Private/deleted video → auto-skip |
-| Report generation failure | Too few or too many sources → check with `/research status` |
-| 0 sources collected | Change search keywords and retry |
+| What you see | What to do |
+|-------------|-----------|
+| "NotebookLM authentication required" | Run `nlm login` in your terminal |
+| A specific video fails to load | It's probably private or deleted — the system skips it automatically |
+| Report generation fails | You may have too few or too many sources — check with `/research status` |
+| 0 sources collected | Try different search keywords |
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 nlm-research/
 ├── README.md                               # Documentation (Korean)
 ├── README_EN.md                            # Documentation (English)
-├── assets/                                 # Documentation images
+├── assets/                                 # Images used in documentation
 ├── .claude/commands/research/
-│   ├── SKILL.md                           # Router (subcommand dispatch)
+│   ├── SKILL.md                           # Command router
 │   ├── DESIGN.md                          # System design document
-│   ├── run.md                             # One-stop pipeline
+│   ├── run.md                             # Full automated flow
 │   ├── search.md                          # YouTube search
-│   ├── collect.md                         # NotebookLM source collection
+│   ├── collect.md                         # Source collection
 │   ├── analyze.md                         # AI analysis
-│   ├── export.md                          # Result file export
+│   ├── export.md                          # File export
 │   ├── status.md                          # Session status
 │   ├── scripts/
 │   │   └── youtube_search.py              # YouTube search script
 │   └── references/
-│       ├── nlm-commands.md                # NotebookLM MCP/CLI reference
-│       └── workflow-examples.md           # Workflow scenario examples
-└── ~/research-output/                     # Output directory (auto-created)
+│       ├── nlm-commands.md                # NotebookLM reference
+│       └── workflow-examples.md           # Workflow examples
+└── ~/research-output/                     # Where your files are saved
 ```
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! Please follow these steps:
+Contributions are welcome! Here's how:
 
 1. Fork this repository
 2. Create a feature branch (`git checkout -b feat/amazing-feature`)
@@ -308,6 +280,6 @@ Contributions are welcome! Please follow these steps:
 4. Push to the branch (`git push origin feat/amazing-feature`)
 5. Open a Pull Request
 
-## 📜 License
+## License
 
 This project is licensed under the [MIT License](LICENSE).
