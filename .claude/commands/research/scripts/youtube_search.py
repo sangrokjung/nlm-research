@@ -1,1 +1,1 @@
-/Users/sangrok/.claude/commands/youtube-search/scripts/youtube_search.py
+/Users/srinicenthala/.claude/commands/research/scripts/youtube_search.py
