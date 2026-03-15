@@ -35,6 +35,19 @@ The MCP server (`notebooklm-mcp`) is configured in `.mcp.json` and runs via `/Us
 /research status                     # View current session state
 ```
 
+## Running the Drive Subcommand
+
+```bash
+/research drive list [notebook-id]        # List Drive sources + sync status
+/research drive sync [notebook-id]        # Re-sync outdated Drive sources
+/research drive add <drive-url-or-id>     # Add a Drive doc/slides/sheets/pdf
+
+# Drive + YouTube together in one pipeline
+/research run <topic> --drive <url-or-id> --auto
+```
+
+> Drive files must have "Anyone with the link" view permission enabled.
+
 ## Architecture
 
 ### Command Routing
@@ -49,6 +62,7 @@ SKILL.md (router)
 ├── analyze.md    — Calls NotebookLM MCP for Q&A, reports, audio, slides, quiz
 ├── export.md     — Calls nlm CLI to download artifacts to ~/research-output/
 ├── status.md     — Reads local session files + NotebookLM MCP
+├── drive.md      — Google Drive source management (list/sync/add)
 └── scripts/
     └── youtube_search.py   — yt-dlp wrapper (symlink to original)
 ```

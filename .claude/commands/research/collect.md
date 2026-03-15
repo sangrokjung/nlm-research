@@ -50,12 +50,19 @@ $ARGUMENTS에서 "collect" 이후의 내용을 파싱하세요.
    mcp__notebooklm-mcp__source_add(notebook_id=..., source_type="url", url="<URL>", wait=true)
    ```
 
-2. **Google Drive**: URL에서 문서 ID를 추출하여 추가
-   - URL 패턴: `docs.google.com/document/d/<ID>/...` 또는 `drive.google.com/file/d/<ID>/...`에서 `<ID>` 부분 추출
+2. **Google Drive**: URL에서 문서 ID를 추출하고 doc_type을 자동 감지하여 추가
+   - URL 패턴: `/d/<ID>/` 에서 `<ID>` 부분 추출
    - 문서 ID가 직접 입력된 경우 그대로 사용
+   - **doc_type 자동 감지**:
+     - `docs.google.com/document/` → `doc`
+     - `docs.google.com/presentation/` → `slides`
+     - `docs.google.com/spreadsheets/` → `sheets`
+     - `drive.google.com/file/` → `pdf`
+     - ID 직접 입력 → `doc` (기본값, 사용자에게 유형 확인)
    ```
-   mcp__notebooklm-mcp__source_add(notebook_id=..., source_type="drive", document_id="<ID>")
+   mcp__notebooklm-mcp__source_add(notebook_id=..., source_type="drive", document_id="<ID>", doc_type="<감지된 유형>")
    ```
+   실패 시: "Drive 파일의 공유 설정을 '링크가 있는 모든 사용자에게 보기 권한'으로 변경해주세요." 안내
 
 3. **로컬 파일**: 각 파일을 순차 추가
    ```

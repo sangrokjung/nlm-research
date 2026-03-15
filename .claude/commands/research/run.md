@@ -16,6 +16,7 @@
 | `--top <N>` | 프리셋별 | 상위 N개 영상 선택 |
 | `--notebook <id>` | (신규 생성) | 기존 노트북에 이어서 |
 | `--lang <code>` | ko | 아티팩트 언어 (BCP-47: ko, en, ja 등) |
+| `--drive <url-or-id>` | (없음) | Google Drive 파일을 YouTube 소스와 함께 수집 |
 
 ## 인자 파싱
 
@@ -27,6 +28,7 @@
 4. `--notebook <id>` 추출 → 없으면 신규 생성
 5. 나머지 텍스트 → `<주제>` (검색 키워드)
 6. `--lang <code>` 추출 → 없으면 `ko`
+7. `--drive <url-or-id>` 추출 → 없으면 Drive 소스 없음
 
 주제가 비어있으면 에러: "주제를 입력해주세요. 예: `/research run AI 에이전트 트렌드`"
 
@@ -88,7 +90,14 @@
    ```
    mcp__notebooklm-mcp__source_add(notebook_id, source_type="url", url="<URL>", wait=true)
    ```
-3. 수집 결과를 사용자에게 보고 (성공/실패 수).
+2a. **Drive 소스 추가** (`--drive` 옵션이 있는 경우):
+   - URL에서 문서 ID 추출: `/d/<ID>/` 패턴
+   - URL 패턴으로 doc_type 자동 감지 (`document/`→doc, `presentation/`→slides, `spreadsheets/`→sheets, `drive.google.com/file/`→pdf)
+   ```
+   mcp__notebooklm-mcp__source_add(notebook_id, source_type="drive", document_id="<ID>", doc_type="<유형>")
+   ```
+   실패 시: Drive 파일 공유 설정 확인 안내 후 YouTube 소스만으로 계속 진행 (Tier 2 Degraded)
+3. 수집 결과를 사용자에게 보고 (성공/실패 수, Drive 소스 포함).
 4. `~/research-output/last_session.json` 저장:
    ```json
    {

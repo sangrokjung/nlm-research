@@ -1,7 +1,7 @@
 ---
 name: research
 description: YouTube 검색 -> NotebookLM 수집/분석 -> 결과 추출까지 리서치 전체 파이프라인. 키워드 기반 영상 검색, 소스 수집, AI 분석, 결과 내보내기를 하나의 워크플로우로 통합.
-argument-hint: <run|search|collect|analyze|export|status> [options]
+argument-hint: <run|search|collect|analyze|export|status|drive> [options]
 allowed-tools: Read, Write, Edit, Bash(python3:*), Bash(nlm:*), Bash(date:*), Bash(mkdir:*), Bash(ln:*), mcp__notebooklm-mcp__*
 user-invocable: true
 ---
@@ -37,12 +37,16 @@ $ARGUMENTS의 첫 번째 단어를 파싱하여 적절한 서브커맨드로 라
    - 인증 게이트를 통과한 후, 이 디렉토리의 `export.md`를 읽고 지침을 따른다.
    - `export` 이후의 나머지 텍스트를 옵션으로 전달한다.
 
-7. 위에 해당하지 않는 경우:
+7. 첫 단어가 `drive`인 경우:
+   - 인증 게이트를 통과한 후, 이 디렉토리의 `drive.md`를 읽고 지침을 따른다.
+   - `drive` 이후의 나머지 텍스트를 옵션으로 전달한다.
+
+8. 위에 해당하지 않는 경우:
    - 아래 사용법 안내를 출력한다.
 
 ## 인증 게이트
 
-search를 제외한 MCP 호출이 필요한 서브커맨드(run, collect, analyze, export)는 실행 전에 NotebookLM 인증 상태를 확인한다:
+search를 제외한 MCP 호출이 필요한 서브커맨드(run, collect, analyze, export, drive)는 실행 전에 NotebookLM 인증 상태를 확인한다:
 
 ```bash
 nlm login --check
@@ -64,6 +68,9 @@ nlm login --check
 /research collect                  # 검색 결과를 NotebookLM에 수집
 /research analyze                  # NotebookLM으로 분석
 /research export                   # 분석 결과 내보내기
+/research drive list               # Drive 소스 목록 조회
+/research drive sync               # Drive 소스 동기화
+/research drive add <url>          # Drive 파일 추가
 ```
 
 | 서브커맨드 | 설명 |
@@ -74,3 +81,4 @@ nlm login --check
 | `collect` | 검색된 영상을 NotebookLM 노트북에 소스로 추가 |
 | `analyze` | NotebookLM에서 수집된 소스 AI 분석 |
 | `export` | 분석 결과를 파일로 내보내기 |
+| `drive <list\|sync\|add>` | Google Drive 소스 관리 (목록/동기화/추가) |
