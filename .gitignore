@@ -13,5 +13,12 @@ __pycache__/
 .env
 .env.local
 
+# Claude Code
+.claude/settings.local.json
+.claude/memory/
+
+# Research output (local)
+research-output/
+
 # OS
 .DS_Store

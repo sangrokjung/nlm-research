@@ -41,37 +41,50 @@ Type a topic you're curious about, and this tool finds related YouTube videos, h
 
 ### Step 1: Install the tools
 
-These are the building blocks that make everything work.
+| Tool | Install Command | Purpose |
+|------|----------------|---------|
+| Claude Code | [Official install guide](https://docs.anthropic.com/claude-code) | AI assistant that runs everything |
+| uv | `curl -LsSf https://astral.sh/uv/install.sh \| sh` | Fast Python package manager |
+| nlm | `uv tool install notebooklm-mcp-cli` | NotebookLM CLI + MCP server |
+| yt-dlp | `uv tool install yt-dlp` | YouTube search |
 
-**Claude Code** — The AI assistant that runs everything
+Verify your installation:
 
-Follow the [official install guide](https://docs.anthropic.com/claude-code), then verify:
 ```bash
 claude --version
+nlm --version
+yt-dlp --version
 ```
 
-**Deno** — Required to run the nlm tool
+<details>
+<summary>Alternative: install with pip (if uv is not available)</summary>
 
 ```bash
-curl -fsSL https://deno.land/install.sh | sh
-deno --version    # verify
+pip install notebooklm-mcp-cli yt-dlp
 ```
 
-**nlm** — Connects to Google NotebookLM
+</details>
+
+### Step 2: Connect NotebookLM to Claude Code
+
+The NotebookLM MCP server enables AI podcast, slides, and report generation. **Without it, you'll see `studio_create tool not found` errors.**
+
+**Option A: Automatic (recommended)** — just run Claude Code inside this project directory:
 
 ```bash
-deno install -gArf jsr:@nicholasgriffintn/notebooklm-cli
-nlm --version     # verify
+cd nlm-research
+claude
 ```
 
-**yt-dlp** — Enables YouTube search
+The `.claude/settings.json` in this repo auto-configures the MCP connection. No extra setup needed.
+
+**Option B: Manual** — add to your global Claude Code config:
 
 ```bash
-pip install yt-dlp
-yt-dlp --version  # verify
+claude mcp add notebooklm-mcp -- notebooklm-mcp
 ```
 
-### Step 2: Connect your Google account
+### Step 3: Connect your Google account
 
 NotebookLM needs Google sign-in. Run this once and follow the browser prompt:
 
@@ -79,7 +92,7 @@ NotebookLM needs Google sign-in. Run this once and follow the browser prompt:
 nlm login
 ```
 
-### Step 3: Run your first research
+### Step 4: Run your first research
 
 ```bash
 cd nlm-research   # Navigate to this folder
@@ -90,6 +103,8 @@ claude            # Start the AI assistant
 ```
 
 Add `--auto` to run everything automatically without pausing. Remove it if you want to approve each step.
+
+> **Note:** The `/research` command is a Claude Code skill loaded from this project directory. Make sure you run `claude` from inside the `nlm-research` folder.
 
 ## Use Case Guide
 
@@ -241,7 +256,11 @@ The system handles problems at three levels:
 
 | What you see | What to do |
 |-------------|-----------|
+| `deno install` fails / JSR package not found | The old Deno/JSR installation method has been deprecated. Install via `uv tool install notebooklm-mcp-cli` instead (see Step 1) |
+| `studio_create tool not found` / `download_artifact not available` | NotebookLM MCP server is not connected to Claude Code. Run `claude` inside the `nlm-research` directory (auto-configured), or run `claude mcp add notebooklm-mcp -- notebooklm-mcp` |
+| `/research` command not found | Claude Code doesn't see the skill files. Make sure you `cd nlm-research` first, then run `claude`. Skills are loaded from the project directory |
 | "NotebookLM authentication required" | Run `nlm login` in your terminal |
+| Login keeps failing | Try `nlm login switch default` or clear your browser cache |
 | A specific video fails to load | It's probably private or deleted — the system skips it automatically |
 | Report generation fails | You may have too few or too many sources — check with `/research status` |
 | 0 sources collected | Try different search keywords |
@@ -250,24 +269,28 @@ The system handles problems at three levels:
 
 ```
 nlm-research/
+├── CLAUDE.md                               # Project instructions for Claude Code
+├── .claude/
+│   ├── settings.json                       # MCP server + permissions config
+│   ├── rules/
+│   │   └── research-pipeline.md            # Pipeline rules
+│   ├── skills/research/                    # Skill files (recommended)
+│   │   ├── SKILL.md                        # Command router
+│   │   ├── run.md                          # Full automated flow
+│   │   ├── search.md                       # YouTube search
+│   │   ├── collect.md                      # Source collection
+│   │   ├── analyze.md                      # AI analysis
+│   │   ├── export.md                       # File export
+│   │   ├── status.md                       # Session status
+│   │   ├── scripts/
+│   │   │   └── youtube_search.py           # YouTube search script
+│   │   └── references/
+│   │       ├── nlm-commands.md             # NotebookLM reference
+│   │       └── workflow-examples.md        # Workflow examples
+│   └── commands/research/                  # Legacy (backward compatible)
 ├── README.md                               # This file (English)
 ├── README_KO.md                            # Documentation (Korean)
-├── assets/                                 # Images used in documentation
-├── .claude/commands/research/
-│   ├── SKILL.md                           # Command router
-│   ├── DESIGN.md                          # System design document
-│   ├── run.md                             # Full automated flow
-│   ├── search.md                          # YouTube search
-│   ├── collect.md                         # Source collection
-│   ├── analyze.md                         # AI analysis
-│   ├── export.md                          # File export
-│   ├── status.md                          # Session status
-│   ├── scripts/
-│   │   └── youtube_search.py              # YouTube search script
-│   └── references/
-│       ├── nlm-commands.md                # NotebookLM reference
-│       └── workflow-examples.md           # Workflow examples
-└── ~/research-output/                     # Where your files are saved
+└── assets/                                 # Images used in documentation
 ```
 
 ## Contributing

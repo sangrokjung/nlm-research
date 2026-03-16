@@ -46,11 +46,40 @@
 | 도구 | 왜 필요한가요? | 설치 명령어 | 잘 설치됐는지 확인 |
 |------|---------------|-------------|-------------------|
 | **Claude Code** | AI 비서 프로그램 (이 도구의 두뇌 역할) | [공식 설치 가이드](https://docs.anthropic.com/claude-code) | `claude --version` |
-| **Deno** | nlm 도구를 실행하기 위한 프로그램 | `curl -fsSL https://deno.land/install.sh \| sh` | `deno --version` |
-| **nlm** | NotebookLM과 대화하기 위한 도구 | `deno install -gArf jsr:@nicholasgriffintn/notebooklm-cli` | `nlm --version` |
-| **yt-dlp** | YouTube 검색을 위한 도구 | `pip install yt-dlp` | `yt-dlp --version` |
+| **uv** | Python 패키지를 빠르게 설치해주는 도구 | `curl -LsSf https://astral.sh/uv/install.sh \| sh` | `uv --version` |
+| **nlm** | NotebookLM과 대화하기 위한 도구 | `uv tool install notebooklm-mcp-cli` | `nlm --version` |
+| **yt-dlp** | YouTube 검색을 위한 도구 | `uv tool install yt-dlp` | `yt-dlp --version` |
 
-### 2단계: Google 계정 연결
+> **uv 대신 pip를 쓰고 싶다면:**
+> ```bash
+> pip install notebooklm-mcp-cli yt-dlp
+> ```
+
+> **이전에 Deno/JSR로 설치하셨다면:** 이전 Deno/JSR 패키지(`jsr:@nicholasgriffintn/notebooklm-cli`)는 삭제되었습니다. 위의 uv 또는 pip 명령어로 다시 설치해주세요.
+
+### 2단계: Claude Code에 NotebookLM 연결하기
+
+이 단계가 가장 중요해요! NotebookLM MCP 서버가 연결되어야 AI 팟캐스트, 슬라이드, 리포트 생성이 가능합니다. 연결하지 않으면 `studio_create 도구를 찾을 수 없습니다` 에러가 나요.
+
+**방법 A: 자동 연결 (권장)**
+
+이 레포 폴더에서 Claude Code를 실행하면 `.claude/settings.json`이 자동으로 MCP 연결을 설정해줘요.
+
+```bash
+cd nlm-research
+claude
+# 끝! 이 레포의 설정 파일이 NotebookLM MCP를 자동으로 연결합니다
+```
+
+**방법 B: 수동 연결**
+
+다른 폴더에서도 사용하고 싶다면, 글로벌 Claude Code 설정에 직접 추가할 수 있어요.
+
+```bash
+claude mcp add notebooklm-mcp -- notebooklm-mcp
+```
+
+### 3단계: Google 계정 연결
 
 NotebookLM을 사용하려면 Google 로그인이 필요해요.
 
@@ -59,7 +88,7 @@ nlm login
 # 브라우저가 열리면 Google 계정으로 로그인하세요
 ```
 
-### 3단계: 첫 번째 리서치 실행
+### 4단계: 첫 번째 리서치 실행
 
 ```bash
 cd nlm-research  # 이 폴더에서 실행해야 해요
@@ -232,35 +261,44 @@ AI가 웹에서 추가 자료까지 찾아서 📊 심층 분석 리포트를 �
 
 ### 자주 발생하는 문제
 
-| 상황 | 해결 방법 |
-|------|----------|
-| "NotebookLM 인증이 필요합니다" | 터미널에서 `nlm login` 실행 |
-| 특정 영상 수집 실패 | 비공개/삭제된 영상이에요 — 자동으로 건너뜁니다 |
-| 리포트가 안 만들어져요 | `/research status`로 현황 확인 후 재시도 |
-| 영상을 하나도 못 찾았어요 | 검색 키워드를 바꿔서 다시 해보세요 |
+| 증상 | 원인 | 해결 방법 |
+|------|------|----------|
+| `deno install` 실패 / JSR 패키지 없음 | 이전 Deno/JSR 패키지가 삭제되었어요 | `uv tool install notebooklm-mcp-cli`로 다시 설치하세요 |
+| `studio_create 도구를 찾을 수 없습니다` | NotebookLM MCP 서버가 연결되지 않았어요 | 이 레포 폴더에서 `claude`를 실행하세요 (자동 설정). 또는 `claude mcp add notebooklm-mcp -- notebooklm-mcp` 실행 |
+| `/research` 명령어가 안 돼요 | Claude Code가 스킬 파일을 못 찾고 있어요 | `cd nlm-research` 후 `claude`를 실행하세요. 스킬은 이 프로젝트 폴더 안에 있어서, 해당 폴더에서 실행해야 해요 |
+| `NotebookLM 인증이 필요합니다` | Google 로그인이 만료되었어요 | 터미널에서 `nlm login` 실행 |
+| 로그인이 계속 실패해요 | 브라우저 자동화 문제일 수 있어요 | `nlm login switch default` 시도하거나, 브라우저 캐시를 삭제해보세요 |
+| 특정 영상 수집 실패 | 비공개/삭제된 영상이에요 | 자동으로 건너뜁니다 — 신경 쓰지 않아도 돼요 |
+| 리포트가 안 만들어져요 | 생성 중이거나 오류가 있어요 | `/research status`로 현황 확인 후 재시도하세요 |
+| 영상을 하나도 못 찾았어요 | 검색 키워드가 너무 구체적이에요 | 검색 키워드를 바꿔서 다시 해보세요 |
 
 ## 프로젝트 구조
 
 ```
 nlm-research/
-├── README.md                              # English (default)
+├── CLAUDE.md                              # 프로젝트 설명 (Claude Code용)
+├── .claude/
+│   ├── settings.json                      # MCP 서버 + 권한 설정
+│   ├── rules/
+│   │   └── research-pipeline.md           # 파이프라인 규칙
+│   ├── skills/research/                   # 스킬 파일 (권장)
+│   │   ├── SKILL.md                       # 명령어 라우터
+│   │   ├── run.md                         # 전체 파이프라인
+│   │   ├── search.md                      # YouTube 검색
+│   │   ├── collect.md                     # 소스 수집
+│   │   ├── analyze.md                     # AI 분석
+│   │   ├── export.md                      # 파일 내보내기
+│   │   ├── status.md                      # 세션 상태
+│   │   ├── scripts/
+│   │   │   └── youtube_search.py          # YouTube 검색 스크립트
+│   │   └── references/
+│   │       ├── nlm-commands.md            # NotebookLM 참조
+│   │       └── workflow-examples.md       # 워크플로우 예시
+│   └── commands/research/                 # 레거시 (하위 호환)
+├── README.md                              # English
 ├── README_KO.md                           # 이 문서 (한국어)
 ├── assets/                                # 문서에 사용된 이미지
-├── .claude/commands/research/
-│   ├── SKILL.md                         # 명령어 분배
-│   ├── DESIGN.md                        # 시스템 설계
-│   ├── run.md                           # 자동 실행
-│   ├── search.md                        # YouTube 검색
-│   ├── collect.md                       # 영상 수집
-│   ├── analyze.md                       # AI 분석
-│   ├── export.md                        # 파일 내보내기
-│   ├── status.md                        # 현황 조회
-│   ├── scripts/
-│   │   └── youtube_search.py            # YouTube 검색 스크립트
-│   └── references/
-│       ├── nlm-commands.md              # NotebookLM 명령어 참고
-│       └── workflow-examples.md         # 활용 예시
-└── ~/research-output/                   # 결과물 저장 (자동 생성)
+└── ~/research-output/                     # 결과물 저장 (자동 생성)
 ```
 
 ## 기여
