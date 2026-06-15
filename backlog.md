@@ -102,7 +102,8 @@ remains the canonical pipeline; the GUI is an alternative driver over the same
 
 - [x] Decide stack specifics (FastAPI backend + no-build plain-JS UI) and a `python gui/run.py` launch entry point
 - [~] Backend: thin `nlm`/`youtube_search.py` process-runner; parse `nlm --json`; `localhost`-bind only — **done**. Analyze polls `nlm studio status` until the report completes before downloading (report create is async). Live-validated Search→Collect→Analyze. Stream progress (SSE/websocket) — **pending**
-- [~] Pages mirroring subcommands — Search · Collect · Analyze · Dashboard **wired**; Media · Organize · Share **stubbed (501)**
+- [x] Pages mirroring subcommands — Search · Collect · Analyze · **Media · Organize · Share** · Dashboard all wired (live-validated: organize list → 3 AI labels; share status; media mindmap create+poll)
+- [ ] Upstream `nlm` bug: `nlm download mind-map` fails (artifact generates fine; report/flashcards/infographic/data-table/video downloads work). GUI degrades gracefully (completed + download error). Track for an nlm upgrade.
 - [ ] "Run preset" one-click flow (GUI equivalent of `/research run --auto`) with a step progress stepper
 - [~] Auth pill — ok / stale wired; **unverified-retrying pending**; shared auth with the CLI ✓
 - [~] Error-path UX — Tier-1/Tier-3 banners wired; **Tier-2 per-artifact Retry pending**

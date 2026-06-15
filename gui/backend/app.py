@@ -19,8 +19,12 @@ from .nlm_runner import (
     auth_check,
     create_notebook,
     create_report,
+    download,
     download_report,
+    find_artifact_id,
     list_notebooks,
+    nlm,
+    nlm_json,
     notebook_summary,
     query_notebook,
     search_youtube,
@@ -52,6 +56,49 @@ class AnalyzeRequest(BaseModel):
     language: str = "en"
     question: str | None = DEFAULT_QUESTION
     download: bool = True
+
+
+class MediaRequest(BaseModel):
+    notebook_id: str
+    type: str  # video | flashcards | mindmap | infographic | datatable
+    topic: str | None = None
+    language: str = "en"
+    download: bool = True
+    # type-specific (all optional; sensible defaults applied)
+    format: str | None = None       # video: explainer|brief|cinematic
+    style: str | None = None        # video/infographic visual style
+    focus: str | None = None
+    difficulty: str | None = None   # flashcards: easy|medium|hard
+    title: str | None = None        # mindmap
+    orientation: str | None = None  # infographic
+    detail: str | None = None       # infographic
+    description: str | None = None  # datatable (required content hint)
+
+
+class OrganizeRequest(BaseModel):
+    notebook_id: str
+    action: str = "auto"            # auto | list | move
+    source_id: str | None = None
+    label_id: str | None = None
+
+
+class ShareRequest(BaseModel):
+    notebook_id: str
+    action: str                     # status | public | private | invite | docs | sheets
+    email: str | None = None
+    role: str = "viewer"
+    title: str | None = None
+    topic: str | None = None
+
+
+# media type -> (studio artifact type, download kind, file ext)
+_MEDIA = {
+    "video": ("video", "video", "mp4"),
+    "flashcards": ("flashcards", "flashcards", "json"),
+    "mindmap": ("mind_map", "mind-map", "json"),
+    "infographic": ("infographic", "infographic", "png"),
+    "datatable": ("data_table", "data-table", "csv"),
+}
 
 
 @app.exception_handler(ToolError)
@@ -178,23 +225,104 @@ def analyze(req: AnalyzeRequest) -> dict:
     return result
 
 
-# --- Stubs for stages not yet wired (return 501 with the planned command) ---
+def _media_argv(req: MediaRequest) -> list[str]:
+    nb, t = req.notebook_id, req.type
+    if t == "video":
+        argv = ["video", "create", nb, "--format", req.format or "explainer",
+                "--style", req.style or "auto_select", "--language", req.language, "-y"]
+        if req.focus:
+            argv += ["--focus", req.focus]
+        return argv
+    if t == "flashcards":
+        argv = ["flashcards", "create", nb, "--difficulty", req.difficulty or "medium", "-y"]
+        if req.focus:
+            argv += ["--focus", req.focus]
+        return argv
+    if t == "mindmap":
+        return ["mindmap", "create", nb, "--title", req.title or "Mind Map", "-y"]
+    if t == "infographic":
+        argv = ["infographic", "create", nb, "--orientation", req.orientation or "landscape",
+                "--detail", req.detail or "standard", "--style", req.style or "auto_select",
+                "--language", req.language, "-y"]
+        if req.focus:
+            argv += ["--focus", req.focus]
+        return argv
+    if t == "datatable":
+        desc = req.description or "Key facts and comparisons drawn from the sources"
+        return ["data-table", "create", nb, desc, "--language", req.language, "-y"]
+    raise HTTPException(status_code=400, detail=f"unknown media type: {t}")
 
-_PLANNED = {
-    "media": "nlm <video|flashcards|mindmap|infographic|data-table> create <notebook>",
-    "organize": "nlm label auto <notebook>",
-    "share": "nlm share public|invite <notebook>  /  nlm export docs|sheets <notebook>",
-}
+
+@app.post("/api/media")
+def media(req: MediaRequest) -> dict:
+    """Generate a rich Studio artifact (video/flashcards/mindmap/infographic/datatable)."""
+    if req.type not in _MEDIA:
+        raise HTTPException(status_code=400, detail=f"unknown media type: {req.type}")
+    studio_type, dl_kind, ext = _MEDIA[req.type]
+
+    create = nlm(*_media_argv(req), timeout=900)
+    result: dict = {"type": req.type, "create_ok": create["ok"],
+                    "detail": create["stdout"] or create["stderr"]}
+    if not create["ok"]:
+        return result
+
+    # Video generation is the slowest; give it a longer ceiling.
+    max_wait = 600 if req.type == "video" else 360
+    waited = wait_for_artifact(req.notebook_id, studio_type, max_wait=max_wait)
+    result["artifact_status"] = waited["status"]
+
+    if req.download and waited["status"] == "completed":
+        topic = req.topic or "research"
+        out = sessions.topic_dir(topic) / f"{sessions.slug(topic)}_{req.type}.{ext}"
+        dl = download(dl_kind, req.notebook_id, str(out))
+        result["downloaded"] = str(out) if dl["ok"] else None
+        result["download_detail"] = dl["stdout"] or dl["stderr"]
+    return result
 
 
-@app.post("/api/{stage}")
-def planned_stage(stage: str) -> JSONResponse:
-    if stage in _PLANNED:
-        return JSONResponse(
-            status_code=501,
-            content={"stage": stage, "status": "planned", "command": _PLANNED[stage]},
-        )
-    raise HTTPException(status_code=404, detail=f"unknown stage: {stage}")
+@app.post("/api/organize")
+def organize(req: OrganizeRequest) -> dict:
+    """Source labels — the manage-within-NotebookLM surface (ADR-0010)."""
+    nb, action = req.notebook_id, (req.action or "auto")
+    if action in ("auto", "list"):
+        # auto needs 5+ sources; if labels exist it just returns them.
+        data = nlm_json("label", action, nb, "--json", timeout=180)
+        labels = data.get("labels", data) if isinstance(data, dict) else data
+        return {"action": action, "labels": labels}
+    if action == "move":
+        if not (req.source_id and req.label_id):
+            raise HTTPException(status_code=400, detail="move requires source_id and label_id")
+        res = nlm("label", "move", nb, req.source_id, req.label_id, "--json")
+        return {"action": action, "ok": res["ok"], "detail": res["stdout"] or res["stderr"]}
+    raise HTTPException(status_code=400, detail=f"unsupported organize action: {action}")
+
+
+@app.post("/api/share")
+def share(req: ShareRequest) -> dict:
+    """Publish / collaborate / export to Google Docs · Sheets."""
+    nb, action = req.notebook_id, req.action
+    if action == "status":
+        res = nlm("share", "status", nb)
+        return {"action": action, "ok": res["ok"], "detail": res["stdout"] or res["stderr"]}
+    if action in ("public", "private"):
+        res = nlm("share", action, nb)
+        return {"action": action, "ok": res["ok"], "detail": res["stdout"] or res["stderr"]}
+    if action == "invite":
+        if not req.email:
+            raise HTTPException(status_code=400, detail="invite requires email")
+        res = nlm("share", "invite", nb, req.email, "--role", req.role)
+        return {"action": action, "ok": res["ok"], "detail": res["stdout"] or res["stderr"]}
+    if action in ("docs", "sheets"):
+        artifact_type = "report" if action == "docs" else "data_table"
+        artifact_id = find_artifact_id(nb, artifact_type)
+        if not artifact_id:
+            raise HTTPException(status_code=400,
+                                detail=f"no completed {artifact_type} artifact to export")
+        sub = "to-docs" if action == "docs" else "to-sheets"
+        title = req.title or req.topic or ("Report" if action == "docs" else "Data Table")
+        res = nlm("export", sub, nb, artifact_id, "--title", title)
+        return {"action": action, "ok": res["ok"], "detail": res["stdout"] or res["stderr"]}
+    raise HTTPException(status_code=400, detail=f"unsupported share action: {action}")
 
 
 # Serve the frontend last so /api/* routes take precedence over the static mount.

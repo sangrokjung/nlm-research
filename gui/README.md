@@ -5,10 +5,15 @@ for people who prefer clicking to typing. It is an **alternative driver**, not a
 replacement: the CLI remains the canonical pipeline, and both share the same
 `~/research-output/` state (ADR-0012 / ADR-0013 in [`../architecture.md`](../architecture.md)).
 
-> **Status:** scaffold. **Search, Collect, Analyze**, auth status, and the notebook
-> dashboard are wired end-to-end. Media / Organize / Share remain stubbed pages whose
-> backend returns `501` with the `nlm` command they will run. Tracked in
-> [`../backlog.md`](../backlog.md) → Epic 6; flows in [`../user-flow.md`](../user-flow.md) → §8.
+> **Status:** all stages wired — **Search, Collect, Analyze, Media, Organize, Share** —
+> plus auth status and the notebook dashboard. Remaining: progress streaming (ops are
+> still synchronous) and a few polish items. Tracked in [`../backlog.md`](../backlog.md)
+> → Epic 6; flows in [`../user-flow.md`](../user-flow.md) → §8.
+>
+> Known `nlm` v0.7.2 limitation: `nlm download mind-map` fails (the mind map still
+> generates and is visible in NotebookLM; report/flashcards/infographic/data-table/
+> video downloads work). The GUI reports this as a completed artifact with a failed
+> download rather than a false success.
 
 ## How it works
 
@@ -64,8 +69,10 @@ gui/
 | POST | `/api/search` | `youtube_search.py --json` |
 | GET | `/api/notebooks` | `nlm notebook list --json` |
 | POST | `/api/collect` | `nlm notebook create` (if new) + `nlm source add … --wait` |
-| POST | `/api/analyze` | `nlm report create` + `nlm query notebook --json` + `nlm download report` |
-| POST | `/api/{media,organize,share}` | `501` stub (planned command in body) |
+| POST | `/api/analyze` | `nlm report create` + `nlm query notebook --json` + poll + `nlm download report` |
+| POST | `/api/media` | `nlm <video\|flashcards\|mindmap\|infographic\|data-table> create` + poll + `nlm download` |
+| POST | `/api/organize` | `nlm label auto\|list\|move --json` |
+| POST | `/api/share` | `nlm share status\|public\|private\|invite` · `nlm export to-docs\|to-sheets` |
 
 Collect and Analyze are **synchronous** and use `--wait` / Studio generation, so a
 request can stay open for a few minutes. Progress streaming (SSE/websocket) is the

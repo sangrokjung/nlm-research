@@ -160,6 +160,11 @@ def create_report(notebook_id: str, report_format: str = "Briefing Doc",
                "--format", report_format, "--language", language, "-y", timeout=timeout)
 
 
+def _norm(value: str) -> str:
+    """Normalize an artifact-type token (mind_map / mind-map / mindmap -> mindmap)."""
+    return "".join(ch for ch in (value or "").lower() if ch.isalnum())
+
+
 def studio_status(notebook_id: str, timeout: int = 30) -> list[dict[str, Any]]:
     """Return Studio artifacts (`nlm studio status` emits JSON)."""
     res = nlm("studio", "status", notebook_id, timeout=timeout)
@@ -176,17 +181,37 @@ def studio_status(notebook_id: str, timeout: int = 30) -> list[dict[str, Any]]:
 
 def wait_for_artifact(notebook_id: str, artifact_type: str = "report",
                       max_wait: int = 240, interval: int = 6) -> dict[str, Any]:
-    """Poll studio status until the given artifact type completes/fails/times out."""
+    """Poll studio status until the given artifact type completes/fails/times out.
+
+    Matching is normalized so create/studio/download spellings all line up
+    (e.g. mindmap ~ mind_map ~ mind-map).
+    """
+    target = _norm(artifact_type)
     waited = 0
     while waited <= max_wait:
         for art in studio_status(notebook_id):
-            if art.get("type") == artifact_type:
+            if _norm(art.get("type")) == target:
                 st = art.get("status")
                 if st in ("completed", "failed"):
                     return {"status": st, "id": art.get("id")}
         time.sleep(interval)
         waited += interval
     return {"status": "timeout", "id": None}
+
+
+def find_artifact_id(notebook_id: str, artifact_type: str) -> str | None:
+    """Return the id of a completed artifact of the given (normalized) type."""
+    target = _norm(artifact_type)
+    for art in studio_status(notebook_id):
+        if _norm(art.get("type")) == target and art.get("status") == "completed":
+            return art.get("id")
+    return None
+
+
+def download(kind: str, notebook_id: str, output_path: str, timeout: int = 300) -> dict[str, Any]:
+    """Generic `nlm download <kind> <nb> -o <path>` (kind: report/video/audio/
+    flashcards/mind-map/infographic/data-table/quiz/slide-deck)."""
+    return nlm("download", kind, notebook_id, "-o", str(output_path), timeout=timeout)
 
 
 def query_notebook(notebook_id: str, question: str, timeout: int = 180) -> dict[str, Any]:

@@ -273,6 +273,116 @@ function analyzePage() {
   return wrap;
 }
 
+function mediaPage() {
+  const wrap = el("div", { class: "card" });
+  const nb = notebookSelect(false);
+  const type = el("select", {}, ...["video", "flashcards", "mindmap", "infographic", "datatable"].map((t) => el("option", { value: t }, t)));
+  const fmt = el("select", {}, ...["explainer", "brief", "cinematic"].map((f) => el("option", { value: f }, f)));
+  const fmtRow = el("label", { class: "row" }, "format", fmt);
+  const extra = el("input", { type: "text", placeholder: "focus topic (datatable: table description)" });
+  const dl = el("input", { type: "checkbox", checked: "checked" });
+  const out = el("div", {});
+  const sync = () => { fmtRow.style.display = type.value === "video" ? "" : "none"; };
+  type.addEventListener("change", sync);
+
+  const btn = el("button", { class: "primary" }, "Generate");
+  btn.addEventListener("click", async () => {
+    const notebook_id = nb.value || state.notebookId;
+    if (!notebook_id) { out.replaceChildren(el("div", { class: "banner err" }, "Pick a notebook.")); return; }
+    btn.disabled = true;
+    out.replaceChildren(el("div", { class: "spinner" }, `Generating ${type.value}… (video can take several minutes)`));
+    const payload = { notebook_id, type: type.value, topic: state.topic || state.lastQuery || "research", download: dl.checked };
+    if (type.value === "video") payload.format = fmt.value;
+    if (extra.value.trim()) { if (type.value === "datatable") payload.description = extra.value.trim(); else payload.focus = extra.value.trim(); }
+    const { ok, body } = await api("/api/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    btn.disabled = false;
+    if (!ok) { out.replaceChildren(el("div", { class: "banner err" }, body.error || body.detail || "Media generation failed")); return; }
+    const status = body.artifact_status || (body.create_ok ? "started" : "failed");
+    const tail = body.downloaded ? " · saved to " + body.downloaded : (status === "timeout" ? " · still generating — check later" : "");
+    out.replaceChildren(el("div", { class: "banner info" }, `${type.value}: ${status}${tail}`));
+  });
+  sync();
+  wrap.append(
+    el("h1", {}, "Media"),
+    el("p", { class: "sub" }, "Generate a rich Studio artifact and download it to ~/research-output/."),
+    el("div", { class: "row" }, el("label", {}, "Notebook"), nb),
+    el("div", { class: "row" }, el("label", {}, "Type"), type, fmtRow, el("label", { class: "row" }, dl, "download")),
+    el("div", { class: "row" }, extra),
+    el("div", { class: "row", style: "margin-top:12px" }, btn),
+    out,
+  );
+  return wrap;
+}
+
+function renderLabels(out, labels) {
+  const arr = Array.isArray(labels) ? labels : (labels && labels.labels) || [];
+  if (!arr.length) { out.replaceChildren(el("div", { class: "banner info" }, "No labels returned (auto-label needs 5+ sources).")); return; }
+  const list = el("div", { class: "results", style: "margin-top:12px" });
+  arr.forEach((l) => {
+    const name = l.name || l.title || l.label || l.label_name || (typeof l === "string" ? l : JSON.stringify(l));
+    const emoji = l.emoji || "🏷";
+    const count = l.source_count ?? l.count ?? (Array.isArray(l.source_ids) ? l.source_ids.length : undefined);
+    list.append(el("div", { class: "result" }, el("span", {}, emoji), el("div", { class: "title" }, String(name)), el("div", { class: "meta" }, count !== undefined ? count + " sources" : "")));
+  });
+  out.replaceChildren(list);
+}
+
+function organizePage() {
+  const wrap = el("div", { class: "card" });
+  const nb = notebookSelect(false);
+  const out = el("div", {});
+  const run = async (action) => {
+    const notebook_id = nb.value || state.notebookId;
+    if (!notebook_id) { out.replaceChildren(el("div", { class: "banner err" }, "Pick a notebook.")); return; }
+    out.replaceChildren(el("div", { class: "spinner" }, action === "auto" ? "Auto-labeling sources…" : "Loading labels…"));
+    const { ok, body } = await api("/api/organize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notebook_id, action }) });
+    if (!ok) { out.replaceChildren(el("div", { class: "banner err" }, body.error || body.detail || "Organize failed")); return; }
+    renderLabels(out, body.labels);
+  };
+  wrap.append(
+    el("h1", {}, "Organize"),
+    el("p", { class: "sub" }, "AI-group the notebook's sources into themed labels — inside NotebookLM (needs 5+ sources)."),
+    el("div", { class: "row" }, el("label", {}, "Notebook"), nb),
+    el("div", { class: "row", style: "margin-top:10px" },
+      el("button", { class: "primary", onclick: () => run("auto") }, "Auto-label"),
+      el("button", { class: "primary", onclick: () => run("list") }, "List labels")),
+    out,
+  );
+  return wrap;
+}
+
+function sharePage() {
+  const wrap = el("div", { class: "card" });
+  const nb = notebookSelect(false);
+  const email = el("input", { type: "text", placeholder: "collaborator@email.com" });
+  const out = el("div", {});
+  const run = async (action, extra = {}) => {
+    const notebook_id = nb.value || state.notebookId;
+    if (!notebook_id) { out.replaceChildren(el("div", { class: "banner err" }, "Pick a notebook.")); return; }
+    out.replaceChildren(el("div", { class: "spinner" }, `${action}…`));
+    const { ok, body } = await api("/api/share", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ notebook_id, action, topic: state.topic || state.lastQuery || "research", ...extra }) });
+    if (!ok) { out.replaceChildren(el("div", { class: "banner err" }, body.error || body.detail || "Share failed")); return; }
+    out.replaceChildren(
+      el("div", { class: body.ok ? "banner info" : "banner err" }, `${action}: ${body.ok ? "ok" : "failed"}`),
+      el("div", { class: "muted", style: "margin-top:8px;white-space:pre-wrap" }, body.detail || ""));
+  };
+  wrap.append(
+    el("h1", {}, "Share"),
+    el("p", { class: "sub" }, "Publish, invite collaborators, or export to Google Docs/Sheets. ⚠ outbound."),
+    el("div", { class: "row" }, el("label", {}, "Notebook"), nb),
+    el("div", { class: "row", style: "margin-top:10px" },
+      el("button", { class: "primary", onclick: () => run("status") }, "Status"),
+      el("button", { class: "primary", onclick: () => run("public") }, "Make public"),
+      el("button", { class: "primary", onclick: () => run("private") }, "Make private"),
+      el("button", { class: "primary", onclick: () => run("docs") }, "Export → Docs"),
+      el("button", { class: "primary", onclick: () => run("sheets") }, "Export → Sheets")),
+    el("div", { class: "row", style: "margin-top:10px" }, email,
+      el("button", { class: "primary", onclick: () => run("invite", { email: email.value.trim() }) }, "Invite")),
+    out,
+  );
+  return wrap;
+}
+
 function placeholder(page) {
   const planned = {
     Media: "POST /api/media → nlm <video|flashcards|mindmap|infographic|data-table> create",
@@ -290,6 +400,9 @@ const PAGE_RENDERERS = {
   Search: searchPage,
   Collect: collectPage,
   Analyze: analyzePage,
+  Media: mediaPage,
+  Organize: organizePage,
+  Share: sharePage,
   Dashboard: dashboardPage,
 };
 
