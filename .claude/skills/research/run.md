@@ -16,6 +16,7 @@
 | `--top <N>` | preset-specific | Use the top N videos |
 | `--notebook <id>` | (create new) | Add to an existing notebook |
 | `--lang <code>` | en | Artifact language (BCP-47: en, ko, ja, ...) |
+| `--drive <url-or-id>` | (none) | Collect a Google Drive file alongside the YouTube sources |
 
 ## Parsing
 
@@ -27,6 +28,7 @@ Parse the text after `run` in `$ARGUMENTS`.
 4. Extract `--notebook <id>` → otherwise create a new notebook
 5. The remainder is the `<topic>` (search keyword)
 6. Extract `--lang <code>` → default `en`
+7. Extract `--drive <url-or-id>` → if absent, no Drive source is collected
 
 If the topic is empty, error: "Please provide a topic. Example: `/research run AI agent trends`."
 
@@ -88,7 +90,14 @@ Execute MCP calls directly for each step. Confirmation prompts happen exactly tw
    ```
    mcp__notebooklm-mcp__source_add(notebook_id, source_type="url", url="<URL>", wait=true)
    ```
-3. Report the result to the user (success / failure counts).
+2a. **Add the Drive source** (when `--drive` is set):
+   - Extract the document ID from the URL using the `/d/<ID>/` pattern.
+   - Auto-detect `doc_type` from the URL (`document/` → doc, `presentation/` → slides, `spreadsheets/` → sheets, `drive.google.com/file/` → pdf).
+   ```
+   mcp__notebooklm-mcp__source_add(notebook_id, source_type="drive", document_id="<ID>", doc_type="<detected type>")
+   ```
+   On failure, tell the user to check the Drive file's sharing settings and continue with the YouTube sources only (Tier 2 Degraded).
+3. Report the result to the user (success / failure counts, including the Drive source).
 4. Save `~/research-output/last_session.json`:
    ```json
    {

@@ -50,12 +50,19 @@ Once the source list is finalized, detect the type of each item:
    mcp__notebooklm-mcp__source_add(notebook_id=..., source_type="url", url="<URL>", wait=true)
    ```
 
-2. **Google Drive**: extract the document ID from the URL and add it
-   - URL patterns: `docs.google.com/document/d/<ID>/...` or `drive.google.com/file/d/<ID>/...` — extract `<ID>`
+2. **Google Drive**: extract the document ID from the URL, auto-detect `doc_type`, and add it
+   - URL pattern: `/d/<ID>/` — extract `<ID>`
    - If a raw document ID was given, use it as-is
+   - **`doc_type` auto-detection**:
+     - `docs.google.com/document/` → `doc`
+     - `docs.google.com/presentation/` → `slides`
+     - `docs.google.com/spreadsheets/` → `sheets`
+     - `drive.google.com/file/` → `pdf`
+     - Raw ID with no URL → default to `doc` and confirm the type with the user
    ```
-   mcp__notebooklm-mcp__source_add(notebook_id=..., source_type="drive", document_id="<ID>")
+   mcp__notebooklm-mcp__source_add(notebook_id=..., source_type="drive", document_id="<ID>", doc_type="<detected type>")
    ```
+   On failure, tell the user: "Change the Drive file sharing setting to 'Anyone with the link — Viewer'."
 
 3. **Local file**: add each file sequentially
    ```
