@@ -2,6 +2,7 @@
 
 > System-level architecture and decision log for the `/research` Claude Code skill.
 > For the detailed per-file design, see [`.claude/skills/research/DESIGN.md`](.claude/skills/research/DESIGN.md).
+> For the command-line interaction journeys, see [`user-flow.md`](user-flow.md).
 > For the in-flight NotebookLM v0.7.2 upgrade, see [`backlog.md`](backlog.md).
 
 ---
@@ -227,6 +228,7 @@ Format: each record has **Status**, **Context**, **Decision**, **Consequences**.
 ## 6. Related documents
 
 - [`.claude/skills/research/DESIGN.md`](.claude/skills/research/DESIGN.md) — detailed per-file design, MCP flow, schemas
+- [`user-flow.md`](user-flow.md) — command-line interaction journeys and error-path UX
 - [`backlog.md`](backlog.md) — v0.7.2 upgrade work tracking
 - [`.claude/rules/research-pipeline.md`](.claude/rules/research-pipeline.md) — operational rules (auth, error tiers, paths)
 - [`CLAUDE.md`](CLAUDE.md) — project guidance for Claude Code
