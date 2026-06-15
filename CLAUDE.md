@@ -12,13 +12,15 @@ YouTube 검색 → NotebookLM AI 분석 → 팟캐스트/슬라이드/리포트 
 
 ## MCP 서버 설정
 
-NotebookLM의 AI 팟캐스트, 슬라이드, 리포트 생성 기능을 사용하려면 MCP 서버 연결이 필요합니다:
+NotebookLM의 AI 팟캐스트, 슬라이드, 리포트 생성 기능을 사용하려면 MCP 서버 연결이 필요합니다.
+
+이 레포에는 프로젝트 스코프 MCP 설정(`.mcp.json`)이 포함되어 있어, 레포 디렉토리에서 `claude`를 실행하면 자동으로 `notebooklm-mcp` 서버를 사용할 수 있습니다 (첫 실행 시 신뢰 확인 프롬프트). 추가로 `.claude/settings.json`에 `mcp__notebooklm-mcp__*` 권한이 사전 허용되어 있습니다.
+
+수동으로 등록하려면:
 
 ```bash
-claude mcp add notebooklm-mcp -- nlm mcp
+claude mcp add -s project notebooklm-mcp -- nlm mcp
 ```
-
-또는 `.claude/settings.json`에 이미 설정되어 있으므로, 이 레포 디렉토리에서 `claude`를 실행하면 자동 연결됩니다.
 
 ## 핵심 명령어
 
