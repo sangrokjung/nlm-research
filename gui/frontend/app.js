@@ -248,7 +248,11 @@ function analyzePage() {
     });
     btn.disabled = false;
     if (!ok) { out.replaceChildren(el("div", { class: "banner err" }, body.error || body.detail || "Analyze failed")); return; }
-    const kids = [el("div", { class: "banner info" }, `Report: ${body.report_ok ? "✓ generated" : "✗ failed"}${body.downloaded ? " · saved to " + body.downloaded : ""}`)];
+    const rstat = body.report_status || (body.report_ok ? "started" : "failed");
+    const tail = body.downloaded
+      ? " · saved to " + body.downloaded
+      : (rstat === "timeout" ? " · still generating — check Dashboard shortly" : "");
+    const kids = [el("div", { class: "banner info" }, `Report: ${rstat}${tail}`)];
     if (body.answer) kids.push(el("div", { class: "card" }, el("h2", {}, "Q&A"), el("div", { html: body.answer.replace(/\n/g, "<br>") })));
     if (body.answer_error) kids.push(el("div", { class: "banner err" }, "Q&A: " + body.answer_error));
     if (!body.report_ok && body.report_detail) kids.push(el("div", { class: "banner err" }, body.report_detail));

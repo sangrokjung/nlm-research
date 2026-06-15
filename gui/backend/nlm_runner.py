@@ -11,6 +11,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from typing import Any
 
 from . import config
@@ -153,8 +154,39 @@ def add_sources(notebook_id: str, urls: list[str], wait: bool = True,
 
 def create_report(notebook_id: str, report_format: str = "Briefing Doc",
                   language: str = "en", timeout: int = 600) -> dict[str, Any]:
+    # Note: `nlm report create` returns as soon as generation STARTS (async),
+    # so callers must poll wait_for_artifact() before downloading.
     return nlm("report", "create", notebook_id,
                "--format", report_format, "--language", language, "-y", timeout=timeout)
+
+
+def studio_status(notebook_id: str, timeout: int = 30) -> list[dict[str, Any]]:
+    """Return Studio artifacts (`nlm studio status` emits JSON)."""
+    res = nlm("studio", "status", notebook_id, timeout=timeout)
+    if not res["ok"]:
+        return []
+    try:
+        data = json.loads(res["stdout"])
+    except json.JSONDecodeError:
+        return []
+    if isinstance(data, list):
+        return data
+    return data.get("artifacts", []) if isinstance(data, dict) else []
+
+
+def wait_for_artifact(notebook_id: str, artifact_type: str = "report",
+                      max_wait: int = 240, interval: int = 6) -> dict[str, Any]:
+    """Poll studio status until the given artifact type completes/fails/times out."""
+    waited = 0
+    while waited <= max_wait:
+        for art in studio_status(notebook_id):
+            if art.get("type") == artifact_type:
+                st = art.get("status")
+                if st in ("completed", "failed"):
+                    return {"status": st, "id": art.get("id")}
+        time.sleep(interval)
+        waited += interval
+    return {"status": "timeout", "id": None}
 
 
 def query_notebook(notebook_id: str, question: str, timeout: int = 180) -> dict[str, Any]:

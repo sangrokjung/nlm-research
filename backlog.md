@@ -101,7 +101,7 @@ remains the canonical pipeline; the GUI is an alternative driver over the same
 `~/research-output/` state. See `user-flow.md` §8.
 
 - [x] Decide stack specifics (FastAPI backend + no-build plain-JS UI) and a `python gui/run.py` launch entry point
-- [~] Backend: thin `nlm`/`youtube_search.py` process-runner; parse `nlm --json`; `localhost`-bind only — **done**; stream progress (SSE/websocket) — **pending**
+- [~] Backend: thin `nlm`/`youtube_search.py` process-runner; parse `nlm --json`; `localhost`-bind only — **done**. Analyze polls `nlm studio status` until the report completes before downloading (report create is async). Live-validated Search→Collect→Analyze. Stream progress (SSE/websocket) — **pending**
 - [~] Pages mirroring subcommands — Search · Collect · Analyze · Dashboard **wired**; Media · Organize · Share **stubbed (501)**
 - [ ] "Run preset" one-click flow (GUI equivalent of `/research run --auto`) with a step progress stepper
 - [~] Auth pill — ok / stale wired; **unverified-retrying pending**; shared auth with the CLI ✓

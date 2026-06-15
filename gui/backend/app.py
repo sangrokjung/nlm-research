@@ -24,6 +24,7 @@ from .nlm_runner import (
     notebook_summary,
     query_notebook,
     search_youtube,
+    wait_for_artifact,
 )
 
 app = FastAPI(title="Research GUI", version="0.1.0")
@@ -141,10 +142,12 @@ def analyze(req: AnalyzeRequest) -> dict:
 
     result: dict = {"notebook_id": req.notebook_id}
 
+    # Start the (async) report generation first.
     report = create_report(req.notebook_id, req.report_format, req.language)
     result["report_ok"] = report["ok"]
     result["report_detail"] = report["stdout"] or report["stderr"]
 
+    # Run the Q&A next — it's synchronous and overlaps report generation time.
     if req.question:
         try:
             qa = query_notebook(req.notebook_id, req.question)
@@ -152,7 +155,14 @@ def analyze(req: AnalyzeRequest) -> dict:
         except ToolError as exc:
             result["answer_error"] = str(exc)
 
-    if req.download and report["ok"]:
+    # Poll until the report artifact is ready, then download.
+    report_done = False
+    if report["ok"]:
+        waited = wait_for_artifact(req.notebook_id, "report")
+        result["report_status"] = waited["status"]
+        report_done = waited["status"] == "completed"
+
+    if req.download and report_done:
         topic = req.topic or "research"
         out = sessions.topic_dir(topic) / f"{sessions.slug(topic)}_report.md"
         dl = download_report(req.notebook_id, str(out))
