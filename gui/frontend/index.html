@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Research GUI</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">/research</div>
+    <nav id="nav" class="stepper"></nav>
+    <div class="auth">
+      <span id="auth-pill" class="pill pill-unknown" title="auth status">checking…</span>
+    </div>
+  </header>
+
+  <main id="view" class="view">
+    <!-- active page renders here -->
+  </main>
+
+  <footer class="footer">
+    Local web app · drives <code>nlm</code> + <code>youtube_search.py</code> ·
+    state in <code>~/research-output/</code> · see <code>architecture.md</code> (ADR-0012/0013)
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
