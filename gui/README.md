@@ -6,9 +6,10 @@ replacement: the CLI remains the canonical pipeline, and both share the same
 `~/research-output/` state (ADR-0012 / ADR-0013 in [`../architecture.md`](../architecture.md)).
 
 > **Status:** all stages wired — **Search, Collect, Analyze, Media, Organize, Share** —
-> plus auth status and the notebook dashboard. Remaining: progress streaming (ops are
-> still synchronous) and a few polish items. Tracked in [`../backlog.md`](../backlog.md)
-> → Epic 6; flows in [`../user-flow.md`](../user-flow.md) → §8.
+> plus auth status and the notebook dashboard. Long stages (collect/analyze/media)
+> **stream live progress over SSE**; the synchronous endpoints remain for simple API
+> use. Tracked in [`../backlog.md`](../backlog.md) → Epic 6; flows in
+> [`../user-flow.md`](../user-flow.md) → §8.
 >
 > Known `nlm` v0.7.2 limitation: `nlm download mind-map` fails (the mind map still
 > generates and is visible in NotebookLM; report/flashcards/infographic/data-table/
@@ -73,6 +74,12 @@ gui/
 | POST | `/api/media` | `nlm <video\|flashcards\|mindmap\|infographic\|data-table> create` + poll + `nlm download` |
 | POST | `/api/organize` | `nlm label auto\|list\|move --json` |
 | POST | `/api/share` | `nlm share status\|public\|private\|invite` · `nlm export to-docs\|to-sheets` |
+| POST | `/api/jobs/{collect\|analyze\|media}` | start a background job → `{job_id}` |
+| GET | `/api/jobs/{job_id}/stream` | SSE progress stream (`started`/`progress`/`done`/`error`) |
+
+Collect / Analyze / Media run as background **jobs** that stream progress over
+Server-Sent Events; the frontend uses `EventSource` to show a live log. The plain
+synchronous `POST /api/{collect,analyze,media}` endpoints still exist for scripting.
 
 Collect and Analyze are **synchronous** and use `--wait` / Studio generation, so a
 request can stay open for a few minutes. Progress streaming (SSE/websocket) is the

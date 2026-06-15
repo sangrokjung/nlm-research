@@ -180,11 +180,13 @@ def studio_status(notebook_id: str, timeout: int = 30) -> list[dict[str, Any]]:
 
 
 def wait_for_artifact(notebook_id: str, artifact_type: str = "report",
-                      max_wait: int = 240, interval: int = 6) -> dict[str, Any]:
+                      max_wait: int = 240, interval: int = 6,
+                      on_poll: Any = None) -> dict[str, Any]:
     """Poll studio status until the given artifact type completes/fails/times out.
 
     Matching is normalized so create/studio/download spellings all line up
-    (e.g. mindmap ~ mind_map ~ mind-map).
+    (e.g. mindmap ~ mind_map ~ mind-map). `on_poll(waited_seconds)` is called
+    each tick so callers can stream progress.
     """
     target = _norm(artifact_type)
     waited = 0
@@ -194,6 +196,8 @@ def wait_for_artifact(notebook_id: str, artifact_type: str = "report",
                 st = art.get("status")
                 if st in ("completed", "failed"):
                     return {"status": st, "id": art.get("id")}
+        if on_poll:
+            on_poll(waited)
         time.sleep(interval)
         waited += interval
     return {"status": "timeout", "id": None}

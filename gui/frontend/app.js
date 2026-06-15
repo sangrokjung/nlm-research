@@ -35,6 +35,32 @@ async function api(path, opts) {
   return { ok: res.ok, status: res.status, body };
 }
 
+// Start a streaming job (POST to start, EventSource for progress). Resolves with
+// the final result; calls onProgress(msg) for each progress event.
+function runJob(stage, payload, onProgress) {
+  return new Promise(async (resolve, reject) => {
+    const { ok, body } = await api("/api/jobs/" + stage, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+    });
+    if (!ok || !body.job_id) { reject(new Error(body.error || body.detail || "could not start job")); return; }
+    const es = new EventSource("/api/jobs/" + body.job_id + "/stream");
+    es.onmessage = (e) => {
+      let ev; try { ev = JSON.parse(e.data); } catch { return; }
+      if (ev.type === "done") { es.close(); resolve(ev.result); }
+      else if (ev.type === "error") { es.close(); reject(new Error(ev.error || "job failed")); }
+      else if (ev.type === "progress" && ev.msg) onProgress(ev.msg);
+    };
+    es.onerror = () => { es.close(); reject(new Error("progress stream interrupted")); };
+  });
+}
+
+// A live progress log: returns { box, push(msg) }.
+function progressLog() {
+  const box = el("div", { class: "banner info", style: "white-space:pre-wrap" }, "Starting…");
+  const lines = [];
+  return { box, push: (msg) => { lines.push(msg); box.textContent = lines.join("\n"); } };
+}
+
 const fmtViews = (v) => {
   if (typeof v !== "number") return v ?? "";
   if (v >= 1e6) return (v / 1e6).toFixed(1) + "M";
@@ -193,20 +219,20 @@ function collectPage() {
   btn.disabled = !urls.length;
   btn.addEventListener("click", async () => {
     btn.disabled = true;
-    out.replaceChildren(el("div", { class: "spinner" }, "Adding sources… this can take a few minutes (waits for processing)."));
-    const { ok, body } = await api("/api/collect", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ urls, topic: topic.value.trim(), notebook_id: nb.value || null }),
-    });
+    const log = progressLog();
+    out.replaceChildren(log.box);
+    try {
+      const body = await runJob("collect", { urls, topic: topic.value.trim(), notebook_id: nb.value || null }, log.push);
+      state.notebookId = body.notebook_id;
+      state.topic = topic.value.trim();
+      out.replaceChildren(
+        el("div", { class: "banner info" },
+          `${body.created ? "Created notebook" : "Used notebook"} ${body.notebook_id} · sources now: ${body.source_count ?? "?"} (requested ${body.requested}). ${body.add_ok ? "" : "⚠ some sources may have failed."}`),
+        el("button", { class: "primary", onclick: () => go("Analyze") }, "Continue → Analyze"));
+    } catch (e) {
+      out.replaceChildren(el("div", { class: "banner err" }, e.message));
+    }
     btn.disabled = false;
-    if (!ok) { out.replaceChildren(el("div", { class: "banner err" }, body.error || body.detail || "Collect failed")); return; }
-    state.notebookId = body.notebook_id;
-    state.topic = topic.value.trim();
-    out.replaceChildren(
-      el("div", { class: "banner info" },
-        `${body.created ? "Created notebook" : "Used notebook"} ${body.notebook_id} · sources now: ${body.source_count ?? "?"} (requested ${body.requested}). ${body.add_ok ? "" : "⚠ some sources may have failed."}`),
-      el("button", { class: "primary", onclick: () => go("Analyze") }, "Continue → Analyze"));
   });
 
   wrap.append(
@@ -236,18 +262,20 @@ function analyzePage() {
     const notebook_id = nb.value || state.notebookId;
     if (!notebook_id) { out.replaceChildren(el("div", { class: "banner err" }, "Pick a notebook first (or collect sources).")); return; }
     btn.disabled = true;
-    out.replaceChildren(el("div", { class: "spinner" }, "Generating report + Q&A… this can take a few minutes."));
-    const { ok, body } = await api("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const log = progressLog();
+    out.replaceChildren(log.box);
+    let body;
+    try {
+      body = await runJob("analyze", {
         notebook_id, topic: state.topic || state.lastQuery || "research",
         report_format: fmt.value, language: lang.value.trim() || "en",
         question: question.value.trim(), download: dl.checked,
-      }),
-    });
+      }, log.push);
+    } catch (e) {
+      out.replaceChildren(el("div", { class: "banner err" }, e.message));
+      btn.disabled = false; return;
+    }
     btn.disabled = false;
-    if (!ok) { out.replaceChildren(el("div", { class: "banner err" }, body.error || body.detail || "Analyze failed")); return; }
     const rstat = body.report_status || (body.report_ok ? "started" : "failed");
     const tail = body.downloaded
       ? " · saved to " + body.downloaded
@@ -290,13 +318,19 @@ function mediaPage() {
     const notebook_id = nb.value || state.notebookId;
     if (!notebook_id) { out.replaceChildren(el("div", { class: "banner err" }, "Pick a notebook.")); return; }
     btn.disabled = true;
-    out.replaceChildren(el("div", { class: "spinner" }, `Generating ${type.value}… (video can take several minutes)`));
+    const log = progressLog();
+    out.replaceChildren(log.box);
     const payload = { notebook_id, type: type.value, topic: state.topic || state.lastQuery || "research", download: dl.checked };
     if (type.value === "video") payload.format = fmt.value;
     if (extra.value.trim()) { if (type.value === "datatable") payload.description = extra.value.trim(); else payload.focus = extra.value.trim(); }
-    const { ok, body } = await api("/api/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    let body;
+    try {
+      body = await runJob("media", payload, log.push);
+    } catch (e) {
+      out.replaceChildren(el("div", { class: "banner err" }, e.message));
+      btn.disabled = false; return;
+    }
     btn.disabled = false;
-    if (!ok) { out.replaceChildren(el("div", { class: "banner err" }, body.error || body.detail || "Media generation failed")); return; }
     const status = body.artifact_status || (body.create_ok ? "started" : "failed");
     const tail = body.downloaded ? " · saved to " + body.downloaded : (status === "timeout" ? " · still generating — check later" : "");
     out.replaceChildren(el("div", { class: "banner info" }, `${type.value}: ${status}${tail}`));

@@ -8,11 +8,15 @@ so the UI shape is complete and the wiring is obvious for the next iteration.
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import config, sessions
+from . import config, jobs, sessions
+
+# no-op emit so the core functions run identically for sync calls and SSE jobs
+def _noop(_event: dict) -> None:
+    return None
 from .nlm_runner import (
     ToolError,
     add_sources,
@@ -131,12 +135,11 @@ def notebooks() -> dict:
     return {"count": len(items), "notebooks": items}
 
 
-@app.post("/api/collect")
-def collect(req: CollectRequest) -> dict:
+def do_collect(req: CollectRequest, emit=_noop) -> dict:
     """Add selected videos to a notebook (creating one if needed).
 
-    Synchronous + `--wait`, so this can take a few minutes while NotebookLM
-    processes sources. Progress streaming is the Epic 6 follow-up.
+    Uses `--wait`, so it can take a few minutes while NotebookLM processes
+    sources; `emit` streams progress when run as a job.
     """
     if not req.urls:
         raise HTTPException(status_code=400, detail="no urls provided")
@@ -147,14 +150,17 @@ def collect(req: CollectRequest) -> dict:
     if not notebook_id:
         topic = (req.topic or "Research").strip()
         title = f"Research: {topic} - {sessions.today()}"
+        emit({"type": "progress", "msg": f"Creating notebook “{title}”…"})
         nb = create_notebook(title)
         notebook_id = nb["notebook_id"]
         created = True
         if not notebook_id:
             raise ToolError("notebook creation did not return an id")
 
+    emit({"type": "progress", "msg": f"Adding {len(req.urls)} source(s) and waiting for processing…"})
     add = add_sources(notebook_id, req.urls, wait=req.wait)
     summary = notebook_summary(notebook_id)
+    emit({"type": "progress", "msg": f"{summary.get('source_count', '?')} source(s) ready."})
 
     session = {
         "notebook_id": notebook_id,
@@ -181,8 +187,12 @@ def collect(req: CollectRequest) -> dict:
     }
 
 
-@app.post("/api/analyze")
-def analyze(req: AnalyzeRequest) -> dict:
+@app.post("/api/collect")
+def collect(req: CollectRequest) -> dict:
+    return do_collect(req)
+
+
+def do_analyze(req: AnalyzeRequest, emit=_noop) -> dict:
     """Generate a report, optionally run a Q&A, and optionally download the report."""
     if not req.notebook_id.strip():
         raise HTTPException(status_code=400, detail="notebook_id is required")
@@ -190,26 +200,33 @@ def analyze(req: AnalyzeRequest) -> dict:
     result: dict = {"notebook_id": req.notebook_id}
 
     # Start the (async) report generation first.
+    emit({"type": "progress", "msg": f"Starting {req.report_format} generation…"})
     report = create_report(req.notebook_id, req.report_format, req.language)
     result["report_ok"] = report["ok"]
     result["report_detail"] = report["stdout"] or report["stderr"]
 
     # Run the Q&A next — it's synchronous and overlaps report generation time.
     if req.question:
+        emit({"type": "progress", "msg": "Running Q&A…"})
         try:
             qa = query_notebook(req.notebook_id, req.question)
             result["answer"] = qa["answer"]
+            emit({"type": "progress", "msg": "Q&A complete."})
         except ToolError as exc:
             result["answer_error"] = str(exc)
 
     # Poll until the report artifact is ready, then download.
     report_done = False
     if report["ok"]:
-        waited = wait_for_artifact(req.notebook_id, "report")
+        waited = wait_for_artifact(
+            req.notebook_id, "report",
+            on_poll=lambda s: emit({"type": "progress", "msg": f"Report generating… {s}s"}),
+        )
         result["report_status"] = waited["status"]
         report_done = waited["status"] == "completed"
 
     if req.download and report_done:
+        emit({"type": "progress", "msg": "Downloading report…"})
         topic = req.topic or "research"
         out = sessions.topic_dir(topic) / f"{sessions.slug(topic)}_report.md"
         dl = download_report(req.notebook_id, str(out))
@@ -223,6 +240,11 @@ def analyze(req: AnalyzeRequest) -> dict:
         sessions.write_last_session(last)
 
     return result
+
+
+@app.post("/api/analyze")
+def analyze(req: AnalyzeRequest) -> dict:
+    return do_analyze(req)
 
 
 def _media_argv(req: MediaRequest) -> list[str]:
@@ -253,13 +275,13 @@ def _media_argv(req: MediaRequest) -> list[str]:
     raise HTTPException(status_code=400, detail=f"unknown media type: {t}")
 
 
-@app.post("/api/media")
-def media(req: MediaRequest) -> dict:
+def do_media(req: MediaRequest, emit=_noop) -> dict:
     """Generate a rich Studio artifact (video/flashcards/mindmap/infographic/datatable)."""
     if req.type not in _MEDIA:
         raise HTTPException(status_code=400, detail=f"unknown media type: {req.type}")
     studio_type, dl_kind, ext = _MEDIA[req.type]
 
+    emit({"type": "progress", "msg": f"Starting {req.type} generation…"})
     create = nlm(*_media_argv(req), timeout=900)
     result: dict = {"type": req.type, "create_ok": create["ok"],
                     "detail": create["stdout"] or create["stderr"]}
@@ -268,16 +290,55 @@ def media(req: MediaRequest) -> dict:
 
     # Video generation is the slowest; give it a longer ceiling.
     max_wait = 600 if req.type == "video" else 360
-    waited = wait_for_artifact(req.notebook_id, studio_type, max_wait=max_wait)
+    waited = wait_for_artifact(
+        req.notebook_id, studio_type, max_wait=max_wait,
+        on_poll=lambda s: emit({"type": "progress", "msg": f"{req.type} generating… {s}s"}),
+    )
     result["artifact_status"] = waited["status"]
 
     if req.download and waited["status"] == "completed":
+        emit({"type": "progress", "msg": f"Downloading {req.type}…"})
         topic = req.topic or "research"
         out = sessions.topic_dir(topic) / f"{sessions.slug(topic)}_{req.type}.{ext}"
         dl = download(dl_kind, req.notebook_id, str(out))
         result["downloaded"] = str(out) if dl["ok"] else None
         result["download_detail"] = dl["stdout"] or dl["stderr"]
     return result
+
+
+@app.post("/api/media")
+def media(req: MediaRequest) -> dict:
+    return do_media(req)
+
+
+# --- Job + SSE streaming for the long stages (ADR-0012 / backlog Epic 6) ----
+
+_JOB_STAGES = {
+    "collect": (CollectRequest, do_collect),
+    "analyze": (AnalyzeRequest, do_analyze),
+    "media": (MediaRequest, do_media),
+}
+
+
+@app.post("/api/jobs/{stage}")
+def start_job(stage: str, payload: dict) -> dict:
+    """Start a long stage in the background; returns a job_id to stream."""
+    if stage not in _JOB_STAGES:
+        raise HTTPException(status_code=404, detail=f"no streaming job for stage: {stage}")
+    model, fn = _JOB_STAGES[stage]
+    req = model(**payload)
+    jid = jobs.new_job()
+    jobs.run(jid, lambda emit: fn(req, emit))
+    return {"job_id": jid, "stage": stage}
+
+
+@app.get("/api/jobs/{jid}/stream")
+def stream_job(jid: str) -> StreamingResponse:
+    return StreamingResponse(
+        jobs.stream(jid),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.post("/api/organize")
