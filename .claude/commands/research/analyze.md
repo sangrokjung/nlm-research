@@ -1,78 +1,78 @@
-# Research Analyze - NotebookLM 분석
+# Research Analyze - NotebookLM Analysis
 
-> 비유: 수집한 자료를 연구실에서 분석하는 단계. 도서관에서 모은 책(소스)을 읽고, 요약하고, 인사이트를 뽑아낸다.
+> Analogy: analyzing collected materials in the lab. Read the books (sources) gathered from the library, summarize them, and extract insights.
 
-## 실행 절차
+## Procedure
 
-### 1. 노트북 ID 확인
+### 1. Determine the notebook ID
 
-`$ARGUMENTS`에서 `analyze` 이후의 텍스트를 notebook-id로 사용한다.
+Use the text after `analyze` in `$ARGUMENTS` as the notebook-id.
 
-- notebook-id가 비어있으면:
-  1. `~/research-output/last_session.json` 파일이 존재하면 자동으로 notebook_id를 로드한다.
-     "마지막 세션의 노트북을 사용합니다: <topic> (<notebook_id 앞 8자리>)"
-  2. 파일이 없으면 사용자에게 질문: "어떤 노트북을 분석할까요? notebook-id를 입력해주세요."
-- notebook-id가 있으면 유효성 확인:
+- If notebook-id is empty:
+  1. If `~/research-output/last_session.json` exists, auto-load notebook_id from it.
+     "Using the most recent session's notebook: <topic> (<first 8 chars of notebook_id>)"
+  2. If no file, ask: "Which notebook should I analyze? Please provide a notebook-id."
+- If notebook-id is provided, validate it:
 
 ```
 mcp__notebooklm-mcp__notebook_get(notebook_id)
 ```
 
-- 실패 시: "노트북을 찾을 수 없습니다. `/research status`로 노트북 목록을 확인해주세요." 안내 후 중단.
+- On failure: "Notebook not found. Run `/research status` to list your notebooks." Then abort.
 
-### 1.5. 프리셋 자동 결정
+### 1.5. Preset auto-routing
 
-상위 파이프라인(run.md)에서 프리셋 정보가 전달된 경우, 분석유형 선택을 건너뛰고 자동으로 실행한다.
+When called from the upper pipeline (run.md) with preset info, skip the analysis-type prompt and execute automatically.
 
-프리셋 정보 형식:
+Preset payload format:
 ```
-프리셋: <preset_name>
-분석유형: <1-5 중 해당 번호>
+Preset: <preset_name>
+Analysis type: <1-5>
 chat_configure: goal=<value>, custom_prompt=<value>
-아티팩트: <report|report+audio|report+quiz 등>
+Artifacts: <report | report+audio | report+quiz, ...>
 ```
 
-프리셋별 자동 매핑:
-| 프리셋 | 분석유형 | 실행 |
-|--------|---------|------|
-| default | 1 (Q&A) + 2 (리포트) | chat_configure → notebook_query → studio_create(report) |
-| trend-report | 1 (Q&A) + 2 (리포트) | chat_configure → notebook_query → studio_create(report) |
-| competitor | 1 (Q&A) + 2 (리포트) | chat_configure → notebook_query → studio_create(report) |
-| learning | 1 (Q&A) + 2 (리포트) + 4 (팟캐스트) | chat_configure → notebook_query → studio_create(report) + studio_create(audio) |
-| deep-dive | 5 (웹 리서치) + 1 (Q&A) + 2 (리포트) | research_start → research_import → chat_configure → notebook_query → studio_create(report) |
-| presentation | 1 (Q&A) + 2 (리포트) + 슬라이드 | chat_configure → notebook_query → studio_create(report) + studio_create(slides) |
+Per-preset mapping:
+| Preset | Analysis type | Steps |
+|--------|---------------|-------|
+| default | 1 (Q&A) + 2 (report) | chat_configure → notebook_query → studio_create(report) |
+| trend-report | 1 (Q&A) + 2 (report) | chat_configure → notebook_query → studio_create(report) |
+| competitor | 1 (Q&A) + 2 (report) | chat_configure → notebook_query → studio_create(report) |
+| learning | 1 (Q&A) + 2 (report) + 4 (podcast) | chat_configure → notebook_query → studio_create(report) + studio_create(audio) |
+| deep-dive | 5 (web research) + 1 (Q&A) + 2 (report) | research_start → research_import → chat_configure → notebook_query → studio_create(report) |
+| presentation | 1 (Q&A) + 2 (report) + slides | chat_configure → notebook_query → studio_create(report) + studio_create(slides) |
 
-프리셋 정보가 없으면 아래 2단계(분석 유형 선택)로 진행한다.
+If no preset payload is provided, fall through to Step 2 (analysis type selection).
 
-### 2. 분석 유형 선택
+### 2. Choose analysis type
 
-사용자에게 분석 유형을 확인한다:
+Ask the user to choose the analysis type:
 
 ```
-## 분석 유형을 선택하세요:
+## Choose an analysis type:
 
-| 번호 | 유형 | 설명 |
-|------|------|------|
-| 1 | 요약 질문 (Q&A) | 즉시 응답, 대화 이어가기 가능 |
-| 2 | 브리핑 리포트 | Briefing Doc 형식 문서 생성 |
-| 3 | 마인드맵 | 주제 구조 시각화 |
-| 4 | 팟캐스트 | 대화형 오디오 생성 |
-| 5 | 웹 리서치 | 추가 소스 자동 발견 |
+| # | Type | Description |
+|---|------|-------------|
+| 1 | Summary Q&A | Immediate response, supports follow-up questions |
+| 2 | Briefing report | Briefing Doc style document |
+| 3 | Mind map | Visualize topic structure |
+| 4 | Podcast | Conversational audio |
+| 5 | Web research | Auto-discover additional sources |
 
-번호를 입력하거나, "알아서 해"를 선택하세요.
+Enter a number, or pick "auto" to let me decide.
 ```
 
-### 3. 유형별 실행
+### 3. Execute by type
 
-#### 1번 - 요약 질문 (Q&A)
+#### Type 1 - Summary Q&A
 
-사용자에게 질문을 확인한다. 질문이 없으면 기본 질문을 사용한다.
+Confirm the user's question. If absent, use the default.
 
 ```
 mcp__notebooklm-mcp__chat_configure(
   notebook_id,
   goal="custom",
-  custom_prompt="리서치 분석가로서 핵심 인사이트를 도출하세요",
+  custom_prompt="Act as a research analyst and extract the key insights.",
   response_length="longer"
 )
 ```
@@ -80,36 +80,36 @@ mcp__notebooklm-mcp__chat_configure(
 ```
 mcp__notebooklm-mcp__notebook_query(
   notebook_id,
-  query="<사용자 질문 또는 기본: 핵심 인사이트 5가지를 구조화하여 요약해주세요>",
-  source_ids=["<특정 소스 ID들>"]  # 선택: 특정 소스만 분석 대상으로 지정
+  query="<user's question or default: Summarize the top 5 key insights in a structured format.>",
+  source_ids=["<specific source IDs>"]  # optional: scope the query to specific sources
 )
 ```
 
-- 사용자가 "특정 소스만 분석해줘" 등의 요청을 하면, `notebook_get`으로 소스 목록을 보여주고 선택받은 후 `source_ids` 파라미터에 전달한다. 미지정 시 전체 소스를 대상으로 분석한다.
-- 결과를 표시한다.
-- Q&A 결과를 노트로 자동 저장한다:
+- If the user asks to limit the analysis to specific sources, call `notebook_get` to list them, capture the selection, and pass it via `source_ids`. Omitting the parameter analyses every source.
+- Display the result.
+- Auto-save the Q&A as a note:
   ```
   mcp__notebooklm-mcp__note(
     notebook_id,
     action="create",
-    title="<주제> 핵심 인사이트",
-    content=<Q&A 결과 텍스트>
+    title="<topic> - Key insights",
+    content=<Q&A result text>
   )
   ```
-- 후속 질문 여부를 확인한다.
-- 후속 질문 시 `conversation_id`를 유지하여 대화를 이어간다:
+- Ask whether the user has a follow-up question.
+- For follow-ups, keep the `conversation_id` to continue the thread:
 
 ```
 mcp__notebooklm-mcp__notebook_query(
   notebook_id,
-  query="<후속 질문>",
-  conversation_id="<이전 응답의 conversation_id>"
+  query="<follow-up question>",
+  conversation_id="<conversation_id from the previous response>"
 )
 ```
 
-- 사용자가 종료할 때까지 반복 가능.
+- Loop until the user ends the thread.
 
-#### 2번 - 브리핑 리포트
+#### Type 2 - Briefing report
 
 ```
 mcp__notebooklm-mcp__studio_create(
@@ -119,17 +119,17 @@ mcp__notebooklm-mcp__studio_create(
 )
 ```
 
-생성 완료까지 폴링:
+Poll until completion:
 
 ```
 mcp__notebooklm-mcp__studio_status(notebook_id)
 ```
 
-- 폴링 중 "브리핑 리포트를 생성하고 있습니다..." 진행 안내를 표시한다.
-- `studio_status`를 호출하여 상태를 확인한다. 완료되지 않았으면 약 15초 후 다시 확인한다.
-- 완료되면 결과를 표시한다.
+- While polling, display "Generating the briefing report..." as progress feedback.
+- Call `studio_status` to check; if not done, wait ~15 seconds and check again.
+- Display the result on completion.
 
-#### 3번 - 마인드맵
+#### Type 3 - Mind map
 
 ```
 mcp__notebooklm-mcp__studio_create(
@@ -139,17 +139,17 @@ mcp__notebooklm-mcp__studio_create(
 )
 ```
 
-생성 완료까지 폴링:
+Poll until completion:
 
 ```
 mcp__notebooklm-mcp__studio_status(notebook_id)
 ```
 
-- 폴링 중 "마인드맵을 생성하고 있습니다..." 진행 안내를 표시한다.
-- `studio_status`를 호출하여 상태를 확인한다. 완료되지 않았으면 약 15초 후 다시 확인한다.
-- 완료되면 결과를 표시한다.
+- Display "Generating the mind map..." while polling.
+- Check via `studio_status`; if not done, wait ~15 seconds and check again.
+- Display the result on completion.
 
-#### 4번 - 팟캐스트
+#### Type 4 - Podcast
 
 ```
 mcp__notebooklm-mcp__studio_create(
@@ -159,119 +159,118 @@ mcp__notebooklm-mcp__studio_create(
 )
 ```
 
-생성 완료까지 폴링:
+Poll until completion:
 
 ```
 mcp__notebooklm-mcp__studio_status(notebook_id)
 ```
 
-- 폴링 중 "팟캐스트를 생성하고 있습니다... (수 분 소요될 수 있습니다)" 진행 안내를 표시한다.
-- `studio_status`를 호출하여 상태를 확인한다. 완료되지 않았으면 약 30초 후 다시 확인한다.
-- 완료되면 결과를 표시한다.
+- Display "Generating the podcast... (this can take a few minutes)" while polling.
+- Check via `studio_status`; if not done, wait ~30 seconds and check again.
+- Display the result on completion.
 
-#### 5번 - 웹 리서치
+#### Type 5 - Web research
 
-사용자에게 리서치 주제를 확인한다. 주제가 없으면 노트북 제목을 기반으로 한다.
+Confirm the research topic. If absent, derive it from the notebook title.
 
 ```
 mcp__notebooklm-mcp__research_start(
   notebook_id,
-  query="<주제>",
+  query="<topic>",
   source="web",
   mode="fast"
 )
 ```
 
-완료까지 폴링:
+Poll until completion:
 
 ```
 mcp__notebooklm-mcp__research_status(notebook_id)
 ```
 
-- 폴링 중 "웹 리서치를 진행하고 있습니다..." 진행 안내를 표시한다.
-- `research_status`를 호출하여 상태를 확인한다. 완료되지 않았으면 약 15초 후 다시 확인한다.
+- Display "Web research in progress..." while polling.
+- Call `research_status`; if not done, wait ~15 seconds and check again.
 
-완료되면 발견된 소스 목록을 표시하고, 가져올 소스를 사용자에게 선택받는다:
+On completion, display the discovered sources and let the user pick which to import:
 
 ```
 mcp__notebooklm-mcp__research_import(
   notebook_id,
-  task_id=<research_status에서 받은 task_id>,
-  source_indices=[<사용자가 선택한 번호들>]
+  task_id=<task_id returned from research_status>,
+  source_indices=[<numbers selected by the user>]
 )
 ```
 
-### 4. 기본 분석 ("알아서 해" 선택 시)
+### 4. Default analysis (when "auto" is chosen)
 
-사용자가 유형을 선택하지 않고 "알아서 해"를 선택한 경우, 아래 순서로 실행한다:
+If the user picks "auto" instead of a specific type, run the following sequence:
 
-1. Q&A 분석 (핵심 인사이트 5가지):
+1. Q&A analysis (top 5 key insights):
 
 ```
 mcp__notebooklm-mcp__chat_configure(
   notebook_id,
   goal="custom",
-  custom_prompt="리서치 분석가로서 핵심 인사이트를 도출하세요",
+  custom_prompt="Act as a research analyst and extract the key insights.",
   response_length="longer"
 )
 mcp__notebooklm-mcp__notebook_query(
   notebook_id,
-  query="핵심 인사이트 5가지를 구조화하여 요약해주세요"
+  query="Summarize the top 5 key insights in a structured format."
 )
 ```
 
-1.5. Q&A 결과를 노트로 자동 저장:
+1.5. Auto-save the Q&A as a note:
    ```
-   mcp__notebooklm-mcp__note(notebook_id, action="create", title="<주제> 핵심 인사이트", content=<결과>)
+   mcp__notebooklm-mcp__note(notebook_id, action="create", title="<topic> - Key insights", content=<result>)
    ```
 
-2. 결과 표시 후 사용자에게 확인:
-   "브리핑 리포트도 생성할까요? (예/아니오)"
-   - "예" 시: studio_create(report) 실행
-   - "아니오" 시: 다음 단계 안내로 이동
+2. After displaying the result, ask: "Would you also like a briefing report? (yes/no)"
+   - "yes" → run `studio_create(report)`
+   - "no" → move to the next-step hint
 
-### 5. 결과 표시 및 추가 분석
+### 5. Display results and additional analysis
 
-분석 결과를 표시한 후, 추가 분석 여부를 확인한다:
+After displaying analysis results, ask whether the user wants additional analysis:
 
 ```
-추가 분석이 필요하신가요? (다른 유형 선택 가능, 종료하려면 "아니오")
+Would you like another analysis? (pick another type, or say "no" to stop)
 ```
 
-- "예" 또는 유형 번호 입력 시: 2단계(분석 유형 선택)로 돌아간다.
-- "아니오" 시: 다음 단계를 안내한다.
+- "yes" or a type number → return to Step 2 (analysis type selection).
+- "no" → print the next-step hint.
 
-### 5.5. 세션 업데이트
+### 5.5. Update the session
 
-분석이 완료되면 `~/research-output/last_session.json`의 `stages`에 analyze 정보를 추가한다.
+When analysis completes, add the `analyze` entry to `~/research-output/last_session.json`'s `stages`.
 
-1. `~/research-output/last_session.json` 파일을 읽는다.
-2. `stages.analyze` 필드를 추가/업데이트한다:
+1. Read `~/research-output/last_session.json`.
+2. Add/update the `stages.analyze` field:
    ```json
    {
      "stages": {
        "analyze": {
          "completed_at": "<ISO8601>",
-         "types_used": [<사용한 분석 유형 번호들>],
-         "artifacts_created": ["<생성된 아티팩트 유형들: report, audio 등>"]
+         "types_used": [<analysis type numbers used>],
+         "artifacts_created": ["<artifact types created: report, audio, ...>"]
        }
      }
    }
    ```
-3. `status`를 `"analyzing"` → `"analyzed"`로, `updated_at`을 현재 시각으로 갱신한다.
-4. Write 도구로 파일을 저장한다.
+3. Set `status` from `"analyzing"` → `"analyzed"` and refresh `updated_at`.
+4. Save the file with the Write tool.
 
-### 6. 다음 단계 안내
+### 6. Next-step hint
 
 ```
-다음 단계: `/research export <notebook-id>` 를 실행하여 분석 결과를 내보내세요.
+Next: run `/research export <notebook-id>` to export the results.
 ```
 
-## 에러 처리
+## Error handling
 
-| 에러 상황 | 대응 |
-|-----------|------|
-| studio 생성 실패 | 소스 수/크기를 확인하고 재시도를 안내한다. "소스가 너무 적거나 클 수 있습니다. 소스를 확인해주세요." |
-| 폴링 타임아웃 (5분(300초) 초과) | "생성이 예상보다 오래 걸리고 있습니다. `/research status`로 나중에 확인해주세요." |
-| Rate limit | 2초 간격으로 대기 후 재시도한다. 3회 실패 시 중단하고 안내한다. |
-| 노트북 없음 | "노트북을 찾을 수 없습니다. `/research status`로 노트북 목록을 확인해주세요." |
+| Situation | Response |
+|-----------|----------|
+| studio creation failed | Check source count/size and prompt for retry. "There may be too few or too large sources. Please verify them." |
+| Polling timeout (>300s / 5 minutes) | "Generation is taking longer than expected. Check back later with `/research status`." |
+| Rate limit | Wait 2 seconds and retry. After 3 failures, abort with guidance. |
+| Notebook missing | "Notebook not found. Run `/research status` to list your notebooks." |

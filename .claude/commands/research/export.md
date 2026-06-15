@@ -1,94 +1,94 @@
-# Research Export - 결과 추출
+# Research Export - Result Export
 
-> 비유: 리서치 도서관에서 빌린 책들의 독서 노트를 정리하여 자기 책상(로컬 파일)으로 가져오는 단계.
+> Analogy: gathering the reading notes from the books we borrowed from the research library and bringing them to our own desk (local files).
 
-## 사용법
-- `/research export` — 최근 노트북의 결과를 내보내기
-- `/research export <notebook-id>` — 특정 노트북 결과 내보내기
-- `/research export <notebook-id> --to-docs` — Google Docs로 내보내기
-- `/research export <notebook-id> --to-sheets` — Google Sheets로 내보내기
+## Usage
+- `/research export` — export results for the most recent notebook
+- `/research export <notebook-id>` — export results for a specific notebook
+- `/research export <notebook-id> --to-docs` — export to Google Docs
+- `/research export <notebook-id> --to-sheets` — export to Google Sheets
 
-## 실행 절차
+## Procedure
 
-### 1단계: 노트북 ID 확인
+### Step 1: Determine the notebook ID
 
-$ARGUMENTS에서 "export" 이후의 내용을 파싱하세요.
+Parse the text after `export` in `$ARGUMENTS`.
 
-- notebook-id가 있으면 해당 노트북 사용
-- 없으면:
-  1. `~/research-output/last_session.json` 파일이 존재하면 자동으로 notebook_id를 로드한다.
-     "마지막 세션의 노트북을 사용합니다: <topic> (<notebook_id 앞 8자리>)"
-  2. 파일이 없으면 `mcp__notebooklm-mcp__notebook_list()`로 목록을 조회하여 사용자에게 선택 요청
+- If a notebook-id is provided, use that notebook.
+- Otherwise:
+  1. If `~/research-output/last_session.json` exists, auto-load notebook_id from it.
+     "Using the most recent session's notebook: <topic> (<first 8 chars of notebook_id>)"
+  2. If no file, call `mcp__notebooklm-mcp__notebook_list()` and let the user pick.
 
-### 2단계: 소스 원문 추출 (선택)
+### Step 2: Extract source text (optional)
 
-사용자에게 소스 원문이 필요한지 확인합니다.
+Ask whether the user wants source text.
 
-필요한 경우:
-1. `mcp__notebooklm-mcp__notebook_get(notebook_id=<id>)`로 소스 목록 확인
-2. 각 소스에 대해:
+If yes:
+1. List sources with `mcp__notebooklm-mcp__notebook_get(notebook_id=<id>)`
+2. For each source:
    ```
    mcp__notebooklm-mcp__source_get_content(source_id=<source_id>)
    ```
-3. 추출된 원문을 마크다운으로 정리
+3. Format the extracted text as Markdown
 
-### 3단계: 종합 Q&A (기존 노트 확인 후 조건부 실행)
+### Step 3: Synthesis Q&A (run only if no existing notes)
 
-먼저 기존 노트가 있는지 확인합니다:
+First check whether notes already exist:
 
 ```
 mcp__notebooklm-mcp__note(action="list", notebook_id=<id>)
 ```
 
-- **노트가 있으면**: 기존 노트 내용을 로드하여 Q&A 결과로 사용합니다.
-  "기존 노트 <N>개를 발견했습니다. 새로 질의하지 않고 기존 분석을 사용합니다."
-- **노트가 없으면**: notebook_query로 핵심 인사이트를 추출합니다:
+- **If notes exist**: load them and treat their content as the Q&A result.
+  "Found <N> existing notes. Reusing prior analysis instead of re-querying."
+- **If no notes**: extract key insights via `notebook_query`:
 
 ```
 mcp__notebooklm-mcp__notebook_query(
   notebook_id=<id>,
-  query="모든 소스를 종합하여 핵심 발견, 트렌드, 실행 가능한 인사이트를 정리해주세요"
+  query="Synthesize all sources and capture the key findings, trends, and actionable insights."
 )
 ```
 
-결과를 마크다운 형식으로 정리합니다.
+Format the result as Markdown.
 
-### 4단계: 아티팩트 목록 조회
+### Step 4: List artifacts
 
 ```
 mcp__notebooklm-mcp__studio_status(notebook_id=<id>)
 ```
 
-완료된 아티팩트 목록을 사용자에게 표시합니다:
+Show the completed artifacts to the user:
 
 ```
-## 생성된 아티팩트
+## Generated artifacts
 
-| 유형 | 상태 | 생성일 |
-|------|------|--------|
+| Type | Status | Created |
+|------|--------|---------|
 | report | completed | ... |
 | audio | completed | ... |
 ```
 
-### 5단계: 내보내기 실행
+### Step 5: Run the export
 
-출력 디렉토리를 확보합니다:
+Make sure the output directory exists:
 
 ```bash
-mkdir -p ~/research-output/<주제>/
+mkdir -p ~/research-output/<topic>/
 ```
-(<주제>의 공백은 하이픈으로 변환)
+(Convert spaces in `<topic>` to hyphens.)
 
-사용자가 선택한 아티팩트를 다운로드합니다:
+Download the artifacts the user picked.
 
-MCP `download_artifact`를 우선 사용한다. 실패 시 CLI `nlm download`로 fallback한다.
+Prefer MCP `download_artifact`. Fall back to the `nlm download` CLI on failure.
 
-**1차: MCP 도구**
+**Primary: MCP tool**
 ```
 mcp__notebooklm-mcp__download_artifact(
   notebook_id=<id>,
   artifact_type="report",
-  output_path="~/research-output/<주제>/<주제>_report.md"
+  output_path="~/research-output/<topic>/<topic>_report.md"
 )
 ```
 
@@ -96,19 +96,19 @@ mcp__notebooklm-mcp__download_artifact(
 mcp__notebooklm-mcp__download_artifact(
   notebook_id=<id>,
   artifact_type="audio",
-  output_path="~/research-output/<주제>/<주제>_podcast.mp3"
+  output_path="~/research-output/<topic>/<topic>_podcast.mp3"
 )
 ```
 
-**Google Docs/Sheets 내보내기 (--to-docs, --to-sheets 옵션):**
+**Google Docs/Sheets export (`--to-docs`, `--to-sheets` options):**
 
-사용자가 `--to-docs` 또는 `--to-sheets` 옵션을 지정한 경우:
+If the user supplies `--to-docs` or `--to-sheets`:
 ```
 mcp__notebooklm-mcp__export_artifact(
   notebook_id=<id>,
   artifact_id=<artifact_id>,
   export_type="docs",      # --to-docs
-  title="<주제> 리서치 리포트"
+  title="<topic> research report"
 )
 ```
 
@@ -116,69 +116,69 @@ mcp__notebooklm-mcp__export_artifact(
 mcp__notebooklm-mcp__export_artifact(
   notebook_id=<id>,
   artifact_id=<artifact_id>,
-  export_type="sheets",    # --to-sheets (Data Table용)
-  title="<주제> 데이터"
+  export_type="sheets",    # --to-sheets (for Data Table)
+  title="<topic> data"
 )
 ```
 
-내보내기 완료 후 Google Docs/Sheets URL을 표시한다.
+After the export, show the resulting Google Docs/Sheets URL.
 
-**2차: CLI fallback (MCP 실패 시)**
+**Secondary: CLI fallback (when MCP fails)**
 ```bash
-nlm download report <notebook-id> --output ~/research-output/<주제>/<주제>_report.md
-nlm download audio <notebook-id> --output ~/research-output/<주제>/<주제>_podcast.mp3
-nlm download slide-deck <notebook-id> --output ~/research-output/<주제>/<주제>_slides.pptx --format pptx
-nlm download quiz <notebook-id> --output ~/research-output/<주제>/<주제>_quiz.json --format json
+nlm download report <notebook-id> --output ~/research-output/<topic>/<topic>_report.md
+nlm download audio <notebook-id> --output ~/research-output/<topic>/<topic>_podcast.mp3
+nlm download slide-deck <notebook-id> --output ~/research-output/<topic>/<topic>_slides.pptx --format pptx
+nlm download quiz <notebook-id> --output ~/research-output/<topic>/<topic>_quiz.json --format json
 ```
 
-### 6단계: Q&A 결과 마크다운 저장
+### Step 6: Save the Q&A as a Markdown file
 
-3단계에서 수행한 종합 Q&A 결과를 파일로 저장합니다.
+Save the synthesis Q&A from Step 3 to a file.
 
-Write 도구로 `~/research-output/<주제>/<주제>_analysis.md` 파일을 생성합니다:
+Use the Write tool to create `~/research-output/<topic>/<topic>_analysis.md`:
 
 ```markdown
-# <주제> - 리서치 분석 결과
+# <topic> - Research Analysis
 
-> 생성일: <date '+%Y-%m-%d'>
-> 노트북 ID: <notebook-id>
-> 소스 수: <N>개
+> Generated: <date '+%Y-%m-%d'>
+> Notebook ID: <notebook-id>
+> Sources: <N>
 
-## 핵심 발견 및 인사이트
+## Key findings and insights
 
-<종합 Q&A 결과>
+<synthesis Q&A result>
 
-## 소스 목록
+## Sources
 
-1. <소스 제목> - <URL>
+1. <source title> - <URL>
 2. ...
 ```
 
-### 7단계: 결과 안내
+### Step 7: Final summary
 
-**파일 구분:**
-- `_report.md`: NotebookLM이 생성한 **원본 브리핑 문서** (download_artifact로 다운로드)
-- `_analysis.md`: 3단계 종합 Q&A 결과를 기반으로 **Claude가 정리한 분석 리포트** (소스 목록, 인사이트 포함)
+**File distinctions:**
+- `_report.md`: the **original briefing document** generated by NotebookLM (via `download_artifact`)
+- `_analysis.md`: an **analysis write-up Claude assembled** from Step 3's Q&A (includes the source list and insights)
 
-내보내기 완료 후 결과를 안내합니다:
+After export completes, summarize the result:
 
 ```
-## 내보내기 완료
+## Export complete
 
-| 파일 | 경로 | 설명 |
-|------|------|------|
-| 분석 리포트 | ~/research-output/<주제>/<주제>_analysis.md | Claude 정리 (Q&A 기반) |
-| 브리핑 문서 | ~/research-output/<주제>/<주제>_report.md | NotebookLM 원본 |
-| 팟캐스트 | ~/research-output/<주제>/<주제>_podcast.mp3 | 오디오 요약 |
+| File | Path | Description |
+|------|------|-------------|
+| Analysis report | ~/research-output/<topic>/<topic>_analysis.md | Claude-authored (built from the Q&A) |
+| Briefing document | ~/research-output/<topic>/<topic>_report.md | NotebookLM original |
+| Podcast | ~/research-output/<topic>/<topic>_podcast.mp3 | Audio summary |
 
-이 결과물을 콘텐츠로 활용하려면 content-pipeline에 입력할 수 있습니다.
+To use these outputs as input for a content pipeline, feed them in directly.
 ```
 
-## 주의사항
+## Notes
 
-- MCP 도구 접두사: `mcp__notebooklm-mcp__` (하이픈 포함)
-- 날짜는 반드시 `date` 명령어로 가져올 것 (암산 금지)
-- 출력 디렉토리 `~/research-output/<주제>/`가 없으면 `mkdir -p`로 생성
-- 다운로드 실패 시 CLI fallback 시도
-- 주제명에 공백이 있으면 하이픈으로 변환하여 파일명에 사용
-- 에러 발생 시 사용자에게 명확히 보고하고 다음 아티팩트로 진행
+- MCP tool prefix: `mcp__notebooklm-mcp__` (with hyphen)
+- Always get the date via the `date` command (no mental arithmetic)
+- Create the output directory `~/research-output/<topic>/` with `mkdir -p`
+- On download failure, fall back to the CLI
+- Replace spaces in the topic with hyphens for filenames
+- On error, report clearly and move on to the next artifact

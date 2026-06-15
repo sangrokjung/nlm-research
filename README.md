@@ -13,10 +13,6 @@
   <strong>Type a topic, and AI finds YouTube videos, analyzes them, and creates podcasts, slides, and reports for you</strong>
 </p>
 
-<p align="center">
-  <a href="README_KO.md">한국어</a> | <strong>English</strong>
-</p>
-
 ---
 
 # NLM Research
@@ -76,12 +72,12 @@ cd nlm-research
 claude
 ```
 
-The `.claude/settings.json` in this repo auto-configures the MCP connection. No extra setup needed.
+The `.mcp.json` in this repo auto-configures the MCP connection (the `mcp__notebooklm-mcp__*` permission is also pre-allowed in `.claude/settings.json`). No extra setup needed.
 
-**Option B: Manual** — add to your global Claude Code config:
+**Option B: Manual** — register at project scope from this repo:
 
 ```bash
-claude mcp add notebooklm-mcp -- notebooklm-mcp
+claude mcp add -s project notebooklm-mcp -- nlm mcp
 ```
 
 ### Step 3: Connect your Google account
@@ -216,7 +212,7 @@ Everything is automatically saved by topic under `~/research-output/<topic>/`.
 | `--preset <name>` | Choose a preset (see Use Case Guide above) | default |
 | `--top <N>` | How many top videos to actually use | depends on preset |
 | `--notebook <id>` | Add to an existing notebook instead of creating a new one | create new |
-| `--lang <code>` | Language for generated content (e.g., `en`, `ko`) | ko |
+| `--lang <code>` | Language for generated content (e.g., `en`, `ko`) | en |
 
 ### What's the difference between `-n` and `--top`?
 
@@ -289,7 +285,6 @@ nlm-research/
 │   │       └── workflow-examples.md        # Workflow examples
 │   └── commands/research/                  # Legacy (backward compatible)
 ├── README.md                               # This file (English)
-├── README_KO.md                            # Documentation (Korean)
 └── assets/                                 # Images used in documentation
 ```
 

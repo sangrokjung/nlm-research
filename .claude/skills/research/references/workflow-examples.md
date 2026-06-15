@@ -1,332 +1,337 @@
+---
+name: workflow-examples
+description: Copy-paste-ready command sequences for five real-world research scenarios.
+---
+
 # Research Workflow Examples
 
-> 5가지 실전 시나리오별 명령어 시퀀스. 복사-붙여넣기 가능.
-> MCP 접두사: `mcp__notebooklm-mcp__`
+> Five practical scenarios, each with a copy-paste-ready command sequence.
+> MCP prefix: `mcp__notebooklm-mcp__`
 
 ---
 
-## 시나리오 1: 트렌드 리서치
+## Scenario 1: Trend research
 
-사업 기획을 위해 최신 트렌드를 조사하고 요약 리포트를 생성.
+Gather the latest trends for a business strategy review and generate a summary report.
 
-### 전체 플로우: search -> collect -> analyze -> export
+### Full flow: search -> collect -> analyze -> export
 
 ```bash
-# 1. YouTube 검색
+# 1. YouTube search
 /research search AI agent 2026 trends -n 15
 ```
 
 ```
-# 2. 검색 결과를 NotebookLM에 수집
+# 2. Push the search results into NotebookLM
 /research collect
-# → 번호 선택 (예: 1, 3, 5, 8, 12)
-# → 자동: notebook_create + source_add x5
+# → pick numbers (e.g. 1, 3, 5, 8, 12)
+# → auto: notebook_create + source_add x5
 ```
 
 ```
-# 3. AI 분석
+# 3. AI analysis
 /research analyze <notebook-id>
-# → chat_configure(goal="custom", custom_prompt="리서치 분석가로서...")
-# → notebook_query("핵심 인사이트 5가지를 구조화하여 요약")
+# → chat_configure(goal="custom", custom_prompt="Act as a research analyst...")
+# → notebook_query("Summarize the top 5 key insights in a structured format.")
 # → studio_create(artifact_type="report")
 ```
 
 ```
-# 4. 결과 내보내기
+# 4. Export results
 /research export <notebook-id>
-# → ~/research-output/<주제>_analysis.md
-# → ~/research-output/<주제>_report.md
+# → ~/research-output/<topic>_analysis.md
+# → ~/research-output/<topic>_report.md
 ```
 
-### MCP 호출 시퀀스 (수동 실행 시)
+### MCP call sequence (manual run)
 
 ```
-# 인증 확인
+# Verify auth
 nlm login --check
 
-# 노트북 생성
-mcp__notebooklm-mcp__notebook_create(title="리서치: AI Agent Trends - 2026-03-05")
+# Create notebook
+mcp__notebooklm-mcp__notebook_create(title="Research: AI Agent Trends - 2026-03-05")
 
-# 소스 추가 (URL별 순차)
+# Add sources (per URL)
 mcp__notebooklm-mcp__source_add(notebook_id=<id>, source_type="url", url="https://youtube.com/watch?v=xxx", wait=true)
 mcp__notebooklm-mcp__source_add(notebook_id=<id>, source_type="url", url="https://youtube.com/watch?v=yyy", wait=true)
 
-# 분석 설정
-mcp__notebooklm-mcp__chat_configure(notebook_id=<id>, goal="custom", custom_prompt="리서치 분석가로서 핵심 인사이트를 도출하세요")
+# Configure analysis
+mcp__notebooklm-mcp__chat_configure(notebook_id=<id>, goal="custom", custom_prompt="Act as a research analyst and extract the key insights.")
 
 # Q&A
-mcp__notebooklm-mcp__notebook_query(notebook_id=<id>, query="모든 소스를 종합하여 핵심 발견, 트렌드, 실행 가능한 인사이트를 정리해주세요")
+mcp__notebooklm-mcp__notebook_query(notebook_id=<id>, query="Synthesize all sources and capture the key findings, trends, and actionable insights.")
 
-# 리포트 생성
+# Generate report
 mcp__notebooklm-mcp__studio_create(notebook_id=<id>, artifact_type="report", confirm=true)
-mcp__notebooklm-mcp__studio_status(notebook_id=<id>)  # 완료까지 폴링
+mcp__notebooklm-mcp__studio_status(notebook_id=<id>)  # poll until complete
 
-# 다운로드
+# Download
 mcp__notebooklm-mcp__download_artifact(notebook_id=<id>, artifact_type="report", output_path="~/research-output/ai-trends_report.md")
 ```
 
 ---
 
-## 시나리오 2: 경쟁사 분석
+## Scenario 2: Competitor analysis
 
-경쟁사 제품 리뷰 영상을 수집하고 SWOT 분석.
+Collect competitor product reviews and produce a SWOT analysis.
 
-### 전체 플로우
+### Full flow
 
 ```bash
-# 1. 검색 (선택)
+# 1. Search (optional)
 /research search "competitor-X product review" -n 10
 
-# 2. URL 직접 지정하여 수집
+# 2. Push direct URLs into the collection
 /research collect https://youtube.com/watch?v=abc https://youtube.com/watch?v=def https://example.com/review-article
 
-# 3. SWOT 관점 분석
+# 3. Run a SWOT analysis
 /research analyze <notebook-id>
-# → SWOT 프레임워크 분석 선택
+# → pick the SWOT framework option
 ```
 
-### MCP 호출 시퀀스
+### MCP call sequence
 
 ```
-# 채팅 설정 (SWOT 분석가)
+# Chat configuration (SWOT analyst)
 mcp__notebooklm-mcp__chat_configure(
   notebook_id=<id>,
   goal="custom",
-  custom_prompt="경쟁 분석가로서 SWOT 프레임워크를 사용하여 분석하세요. 각 항목에 구체적 근거를 포함하세요.",
+  custom_prompt="Act as a competitive analyst and analyze using the SWOT framework. Include concrete evidence under each item.",
   response_length="longer"
 )
 
-# SWOT 분석 질문
+# SWOT prompt
 mcp__notebooklm-mcp__notebook_query(
   notebook_id=<id>,
-  query="이 제품의 강점(Strengths), 약점(Weaknesses), 기회(Opportunities), 위협(Threats)을 SWOT 프레임워크로 분석해주세요"
+  query="Analyze this product's Strengths, Weaknesses, Opportunities, and Threats using the SWOT framework."
 )
 
-# 후속 질문 (conversation_id 재사용)
+# Follow-up (reuse conversation_id)
 mcp__notebooklm-mcp__notebook_query(
   notebook_id=<id>,
-  query="우리 제품과 비교하여 차별화 포인트는 무엇인가요?",
+  query="What are the differentiation points relative to our product?",
   conversation_id=<prev_conversation_id>
 )
 ```
 
 ---
 
-## 시나리오 3: 학습 자료 생성
+## Scenario 3: Learning materials
 
-기술 주제에 대한 학습 자료 (Study Guide + 팟캐스트) 자동 생성.
+Auto-generate Study Guide + podcast for a technical topic.
 
-### 전체 플로우
+### Full flow
 
 ```bash
-# 1. URL을 이미 알고 있는 경우 바로 수집
+# 1. Collect already-known URLs directly
 /research collect https://youtube.com/watch?v=tutorial1 https://youtube.com/watch?v=tutorial2
 
-# 2. 다양한 학습 자료 생성
+# 2. Generate diverse learning materials
 /research analyze <notebook-id>
-# → Study Guide 선택
-# → 팟캐스트 생성 선택
+# → choose Study Guide
+# → choose podcast
 
-# 3. 상태 확인
+# 3. Status check
 /research status
 
-# 4. 완료 후 내보내기
+# 4. Export after completion
 /research export <notebook-id>
-# → report.md + podcast.mp3 다운로드
+# → downloads report.md + podcast.mp3
 ```
 
-### MCP 호출 시퀀스
+### MCP call sequence
 
 ```
-# 학습 목적 설정
+# Set learning goal
 mcp__notebooklm-mcp__chat_configure(
   notebook_id=<id>,
   goal="learning_guide",
   response_length="longer"
 )
 
-# Study Guide 생성
+# Create Study Guide
 mcp__notebooklm-mcp__studio_create(
   notebook_id=<id>,
   artifact_type="report",
   confirm=true
 )
 
-# 팟캐스트 생성 (병렬 가능)
+# Create podcast (in parallel)
 mcp__notebooklm-mcp__studio_create(
   notebook_id=<id>,
   artifact_type="audio",
   confirm=true
 )
 
-# 완료 폴링 (5초 간격)
+# Poll until complete (5-second interval)
 mcp__notebooklm-mcp__studio_status(notebook_id=<id>)
 
-# 다운로드
+# Download
 mcp__notebooklm-mcp__download_artifact(notebook_id=<id>, artifact_type="report", output_path="~/research-output/study-guide_report.md")
 mcp__notebooklm-mcp__download_artifact(notebook_id=<id>, artifact_type="audio", output_path="~/research-output/study-guide_podcast.mp3")
 ```
 
 ---
 
-## 시나리오 4: 딥 리서치
+## Scenario 4: Deep research
 
-research_start로 웹에서 추가 소스를 자동 발견하여 깊이 있는 분석.
+Use `research_start` to auto-discover additional web sources for a deep analysis.
 
-### 전체 플로우
+### Full flow
 
 ```bash
-# 1. 기본 소스 수집
+# 1. Collect the baseline source
 /research collect https://youtube.com/watch?v=base-source
 
-# 2. 딥 리서치 모드로 분석
+# 2. Run deep-research mode
 /research analyze <notebook-id>
-# → 딥 리서치 선택
-# → 자동 소스 발견 + 가져오기
+# → choose deep research
+# → auto source discovery + import
 ```
 
-### MCP 호출 시퀀스
+### MCP call sequence
 
 ```
-# 웹 리서치 시작
+# Kick off web research
 mcp__notebooklm-mcp__research_start(
   notebook_id=<id>,
-  query="AI agent framework 비교 분석 2026",
+  query="AI agent framework comparison 2026",
   source="web",
   mode="deep"
 )
-# 반환: { task_id: "..." }
+# Returns: { task_id: "..." }
 
-# 리서치 진행 상태 확인 (폴링)
+# Poll research progress
 mcp__notebooklm-mcp__research_status(
   notebook_id=<id>,
   task_id=<task_id>
 )
-# 반환: { status: "completed", results: [{ title, url, snippet }, ...] }
+# Returns: { status: "completed", results: [{ title, url, snippet }, ...] }
 
-# 발견된 소스 중 유용한 것 가져오기
+# Import the useful discoveries
 mcp__notebooklm-mcp__research_import(
   notebook_id=<id>,
   task_id=<task_id>,
   source_indices=[0, 2, 4]
 )
 
-# 이후 일반 분석 진행
+# Continue normal analysis
 mcp__notebooklm-mcp__notebook_query(
   notebook_id=<id>,
-  query="기존 소스와 새로 발견된 소스를 종합하여 핵심 인사이트를 정리해주세요"
+  query="Synthesize the existing sources together with the newly discovered ones and surface the key insights."
 )
 ```
 
 ---
 
-## 시나리오 5: 에러 대응
+## Scenario 5: Error handling
 
-### 인증 만료
+### Auth expiration
 
-가장 빈번한 에러. 토큰 수명 약 20분.
+The most common error. Token lifetime is ~20 minutes.
 
 ```
-# 1차: 자동 갱신 시도
+# 1st: try auto-refresh
 mcp__notebooklm-mcp__refresh_auth()
 
-# 2차: 실패 시 CLI 재로그인
+# 2nd: if that fails, re-login via CLI
 nlm login
 
-# 3차: CLI도 실패 시 수동 Cookie 저장
+# 3rd: if the CLI also fails, save cookies manually
 mcp__notebooklm-mcp__save_auth_tokens(
   cookies="..."
 )
 ```
 
-장시간 작업(analyze, export) 시 중간에 인증 만료 가능. 서브커맨드 시작 시 `nlm login --check`로 선제 확인.
+Auth can expire mid-run during long analyze/export tasks. Subcommands run `nlm login --check` up-front.
 
-### 소스 추가 실패
+### Source add failure
 
 ```
-# 에러 원인별 대응
+# Per-cause responses
 
-# 비공개/삭제된 YouTube 영상
-# → 해당 URL 건너뛰고 다음 URL 계속 진행
+# Private/deleted YouTube video
+# → skip the URL and continue with the rest
 
-# 벌크 추가 전체 실패
-# → 단건씩 순차 재시도
+# Bulk add fully fails
+# → retry one URL at a time
 mcp__notebooklm-mcp__source_add(notebook_id=<id>, source_type="url", url="<URL1>", wait=true)
 mcp__notebooklm-mcp__source_add(notebook_id=<id>, source_type="url", url="<URL2>", wait=true)
 
-# 노트북당 소스 50개 초과
-# → 주제별 노트북 분할
-mcp__notebooklm-mcp__notebook_create(title="리서치: <주제> Part 2")
+# Over 50 sources in one notebook
+# → split into multiple notebooks
+mcp__notebooklm-mcp__notebook_create(title="Research: <topic> Part 2")
 ```
 
-### Rate Limit
+### Rate limiting
 
 ```
-# 권장 간격
-# source_add: 2초 간격
-# studio_create: 5초 간격
-# research_*: 2초 간격
-# notebook_query: 2초 간격
+# Recommended intervals
+# source_add: 2 seconds
+# studio_create: 5 seconds
+# research_*: 2 seconds
+# notebook_query: 2 seconds
 
-# Rate limit 에러 발생 시 5초 대기 후 재시도
+# On rate-limit error, wait 5 seconds and retry
 ```
 
-### 스튜디오 생성 실패
+### Studio creation failure
 
 ```
-# 1차: studio_status에서 failed 확인
+# 1st: verify failed via studio_status
 mcp__notebooklm-mcp__studio_status(notebook_id=<id>)
 
-# 2차: 소스 수/크기 확인
+# 2nd: check source count/size
 mcp__notebooklm-mcp__notebook_get(notebook_id=<id>)
 
-# 3차: 재시도
+# 3rd: retry
 mcp__notebooklm-mcp__studio_create(notebook_id=<id>, artifact_type="report", confirm=true)
 
-# 4차: 재시도 실패 시 대체 유형 시도
+# 4th: if it keeps failing, try a different type
 mcp__notebooklm-mcp__studio_create(notebook_id=<id>, artifact_type="mind_map", confirm=true)
 ```
 
-### 네트워크 에러
+### Network errors
 
 ```
-# 연결 확인 후 동일 명령 재시도
-# MCP 서버 상태 확인
+# Verify connectivity and retry the same command
+# Check MCP server status
 mcp__notebooklm-mcp__server_info()
 ```
 
 ---
 
-## 시나리오 6: 프레젠테이션 자료 생성
+## Scenario 6: Presentation deck generation
 
-리서치 결과를 리포트 + 슬라이드로 변환하여 발표 자료 준비.
+Convert research into report + slides for a presentation.
 
-### 전체 플로우
+### Full flow
 
 ```bash
-# 원스톱 실행
-/research run AI 에이전트 활용 사례 --preset presentation --auto
+# One-stop run
+/research run AI agent use cases --preset presentation --auto
 # → search → collect → analyze(report + slides) → export(report.md + slides.pptx)
 ```
 
-### MCP 호출 시퀀스 (수동 실행 시)
+### MCP call sequence (manual run)
 
 ```
-# 채팅 설정 (프레젠테이션 전문가)
+# Chat configuration (presentation expert)
 mcp__notebooklm-mcp__chat_configure(
   notebook_id=<id>,
   goal="custom",
-  custom_prompt="프레젠테이션 전문가로서 핵심 포인트를 슬라이드로 구조화하세요",
+  custom_prompt="Act as a presentation expert and structure the key points into a slide outline.",
   response_length="longer"
 )
 
 # Q&A
 mcp__notebooklm-mcp__notebook_query(
   notebook_id=<id>,
-  query="핵심 포인트를 슬라이드 구조로 정리해주세요"
+  query="Organize the key points into a slide structure."
 )
 
-# 리포트 + 슬라이드 생성 (병렬 가능)
+# Create report + slides (in parallel)
 mcp__notebooklm-mcp__studio_create(
   notebook_id=<id>,
   artifact_type="report",
@@ -339,10 +344,10 @@ mcp__notebooklm-mcp__studio_create(
   confirm=true
 )
 
-# 완료 폴링 (5초 간격)
+# Poll until complete (5-second interval)
 mcp__notebooklm-mcp__studio_status(notebook_id=<id>)
 
-# 다운로드
+# Download
 mcp__notebooklm-mcp__download_artifact(notebook_id=<id>, artifact_type="report", output_path="~/research-output/presentation_report.md")
 mcp__notebooklm-mcp__download_artifact(notebook_id=<id>, artifact_type="slides", output_path="~/research-output/presentation_slides.pptx", slide_deck_format="pptx")
 ```

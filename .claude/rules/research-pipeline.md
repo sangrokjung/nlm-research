@@ -1,20 +1,25 @@
 # Research Pipeline Rules
 
-## MCP 도구 접두사
-- NotebookLM MCP: `mcp__notebooklm-mcp__` (하이픈 포함)
+## MCP tool prefix
+- NotebookLM MCP: `mcp__notebooklm-mcp__` (note the hyphen)
 
-## 인증 갱신
-- collect/analyze/export 각 단계 시작 전 `refresh_auth()` 선제 호출
-- 인증 실패 시 `nlm login` 안내
+## Auth refresh
+- Call `refresh_auth()` before each of collect / analyze / export
+- On failure, instruct the user to run `nlm login`
 
-## 에러 처리 3-tier
-- Tier 1 (Fixable): AUTH_EXPIRED → refresh_auth, SOURCE_FAILED → 건너뛰기, RATE_LIMITED → 5초 대기 재시도
-- Tier 2 (Degraded): 부분 실패 → 성공 건만으로 진행, 실패 보고
-- Tier 3 (Fatal): 인증 완전 실패, 수집 0건 → 중단 + 안내
+## 3-tier error handling
+- Tier 1 (Fixable): AUTH_EXPIRED → refresh_auth, SOURCE_FAILED → skip URL, RATE_LIMITED → wait 5s and retry
+- Tier 2 (Degraded): partial failure → continue with the successful sources, report the failures
+- Tier 3 (Fatal): full auth failure or 0 sources collected → abort with guidance
 
-## 날짜 계산
-- 날짜/시간 암산 금지. `date` 명령어 사용
+## Date handling
+- Never do date/time arithmetic in your head. Use the `date` command.
 
-## 출력 경로
-- `~/research-output/<주제>/` (공백은 하이픈 변환)
-- `mkdir -p`로 자동 생성
+## Output path
+- `~/research-output/<topic>/` (replace spaces with hyphens)
+- Auto-create with `mkdir -p`
+
+## Language
+- Default output language is English (BCP-47 `en`)
+- All preset prompts, default Q&A queries, and note titles are written in English
+- Pass `--lang <code>` to override per run

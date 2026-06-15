@@ -1,11 +1,16 @@
-# NotebookLM MCP/CLI 퀵 레퍼런스
+---
+name: nlm-commands
+description: Quick reference for the NotebookLM MCP/CLI commands used by the research skill.
+---
 
-> research 스킬에서 사용하는 MCP 도구와 CLI 명령어 요약.
-> MCP 접두사: `mcp__notebooklm-mcp__`
+# NotebookLM MCP/CLI Quick Reference
+
+> A condensed list of the MCP tools and CLI commands used by the research skill.
+> MCP prefix: `mcp__notebooklm-mcp__`
 
 ---
 
-## 1. 인증
+## 1. Auth
 
 ### MCP: refresh_auth
 
@@ -13,7 +18,7 @@
 mcp__notebooklm-mcp__refresh_auth()
 ```
 
-저장된 토큰으로 자동 갱신 시도. 실패 시 CLI `nlm login` 필요.
+Attempts to refresh using stored tokens. On failure, run the CLI `nlm login`.
 
 ### MCP: save_auth_tokens
 
@@ -23,27 +28,27 @@ mcp__notebooklm-mcp__save_auth_tokens(
 )
 ```
 
-Cookie 기반 인증 저장. `nlm login` CLI 실패 시 fallback.
+Cookie-based auth save. Fallback when `nlm login` fails.
 
 ### CLI: nlm login
 
 ```bash
-nlm login              # 브라우저 인증 (권장)
-nlm login --check      # 인증 상태 확인 (서브커맨드 게이트에서 사용)
-nlm login switch <profile>  # 계정 전환
+nlm login              # Browser-based auth (recommended)
+nlm login --check      # Verify auth status (used by subcommand gates)
+nlm login switch <profile>  # Switch accounts
 ```
 
 ---
 
-## 2. 노트북
+## 2. Notebooks
 
 ### notebook_create
 
 ```
-mcp__notebooklm-mcp__notebook_create(title="리서치: <주제> - <날짜>")
+mcp__notebooklm-mcp__notebook_create(title="Research: <topic> - <date>")
 ```
 
-반환: `{ notebook_id: "..." }`
+Returns: `{ notebook_id: "..." }`
 
 ### notebook_list
 
@@ -51,7 +56,7 @@ mcp__notebooklm-mcp__notebook_create(title="리서치: <주제> - <날짜>")
 mcp__notebooklm-mcp__notebook_list(max_results=100)
 ```
 
-반환: 노트북 배열 `[{ notebook_id, title, created_at }]`
+Returns: list of notebooks `[{ notebook_id, title, created_at }]`
 
 ### notebook_get
 
@@ -59,21 +64,21 @@ mcp__notebooklm-mcp__notebook_list(max_results=100)
 mcp__notebooklm-mcp__notebook_get(notebook_id="...")
 ```
 
-반환: 노트북 상세 (소스 목록, 소스 수 포함)
+Returns: notebook details (sources, source count, ...)
 
 ### notebook_query
 
 ```
 mcp__notebooklm-mcp__notebook_query(
   notebook_id="...",
-  query="핵심 인사이트 5가지를 정리해주세요",
-  conversation_id="...",   # 선택: 대화 이어가기
-  source_ids=["..."],      # 선택: 특정 소스만 대상
-  timeout=120              # 선택: 응답 대기 시간 (초, 기본 120)
+  query="Summarize the top 5 key insights.",
+  conversation_id="...",   # optional: continue a conversation
+  source_ids=["..."],      # optional: scope to specific sources
+  timeout=120              # optional: response wait time in seconds (default 120)
 )
 ```
 
-반환: AI 응답 텍스트 + conversation_id (후속 질문용)
+Returns: AI response text + conversation_id (for follow-ups)
 
 ### notebook_describe
 
@@ -81,12 +86,12 @@ mcp__notebooklm-mcp__notebook_query(
 mcp__notebooklm-mcp__notebook_describe(notebook_id="...")
 ```
 
-반환: 노트북 설명/요약
+Returns: notebook description/summary
 
 ### notebook_rename
 
 ```
-mcp__notebooklm-mcp__notebook_rename(notebook_id="...", new_title="새 제목")
+mcp__notebooklm-mcp__notebook_rename(notebook_id="...", new_title="New title")
 ```
 
 ### notebook_delete
@@ -97,52 +102,52 @@ mcp__notebooklm-mcp__notebook_delete(notebook_id="...", confirm=true)
 
 ---
 
-## 3. 소스
+## 3. Sources
 
 ### source_add
 
-**URL 소스:**
+**URL source:**
 ```
 mcp__notebooklm-mcp__source_add(
   notebook_id="...",
   source_type="url",
   url="https://youtube.com/watch?v=...",
-  wait=true    # 처리 완료까지 대기 (권장)
+  wait=true    # wait for processing to complete (recommended)
 )
 ```
 
-**벌크 URL 추가:**
+**Bulk URL add:**
 ```
 mcp__notebooklm-mcp__source_add(
   notebook_id="...",
   source_type="url",
   urls=["https://url1.com", "https://url2.com"],
   wait=true,
-  wait_timeout=120    # 기본 120초, 소스 처리 대기 시간
+  wait_timeout=120    # default 120 seconds for source processing
 )
 ```
 
-**텍스트 소스:**
+**Text source:**
 ```
 mcp__notebooklm-mcp__source_add(
   notebook_id="...",
   source_type="text",
-  text="소스 내용...",
-  title="소스 제목"
+  text="source body...",
+  title="source title"
 )
 ```
 
-**Google Drive 소스:**
+**Google Drive source:**
 ```
 mcp__notebooklm-mcp__source_add(
   notebook_id="...",
   source_type="drive",
   document_id="...",
-  doc_type="doc"          # 선택: "doc" | "slides" | "sheets" | "pdf" (기본 "doc")
+  doc_type="doc"          # optional: "doc" | "slides" | "sheets" | "pdf" (default "doc")
 )
 ```
 
-**파일 소스:**
+**File source:**
 ```
 mcp__notebooklm-mcp__source_add(
   notebook_id="...",
@@ -157,7 +162,7 @@ mcp__notebooklm-mcp__source_add(
 mcp__notebooklm-mcp__source_get_content(source_id="...")
 ```
 
-반환: 소스의 전체 텍스트 내용
+Returns: the full text content of the source.
 
 ### source_describe
 
@@ -165,12 +170,12 @@ mcp__notebooklm-mcp__source_get_content(source_id="...")
 mcp__notebooklm-mcp__source_describe(source_id="...")
 ```
 
-반환: 소스 요약/설명
+Returns: source summary/description.
 
 ### source_rename
 
 ```
-mcp__notebooklm-mcp__source_rename(notebook_id="...", source_id="...", new_title="새 제목")
+mcp__notebooklm-mcp__source_rename(notebook_id="...", source_id="...", new_title="New title")
 ```
 
 ### source_delete
@@ -186,11 +191,11 @@ mcp__notebooklm-mcp__source_list_drive(notebook_id="...")
 mcp__notebooklm-mcp__source_sync_drive(source_ids=["..."], confirm=true)
 ```
 
-Drive 소스 목록 조회 및 동기화.
+List and sync Drive sources.
 
 ---
 
-## 4. 채팅 설정
+## 4. Chat configuration
 
 ### chat_configure
 
@@ -198,16 +203,16 @@ Drive 소스 목록 조회 및 동기화.
 mcp__notebooklm-mcp__chat_configure(
   notebook_id="...",
   goal="custom",
-  custom_prompt="리서치 분석가로서 핵심 인사이트를 도출하세요",
+  custom_prompt="Act as a research analyst and extract the key insights.",
   response_length="longer"    # "default" | "longer" | "shorter"
 )
 ```
 
-goal 옵션: `"default"`, `"learning_guide"`, `"custom"`
+`goal` options: `"default"`, `"learning_guide"`, `"custom"`
 
 ---
 
-## 5. 노트
+## 5. Notes
 
 ### note (CRUD)
 
@@ -215,20 +220,20 @@ goal 옵션: `"default"`, `"learning_guide"`, `"custom"`
 mcp__notebooklm-mcp__note(
   notebook_id="...",
   action="create",       # "create" | "list" | "update" | "delete"
-  note_id="...",          # update/delete 시 필수
-  title="노트 제목",
-  content="노트 내용",
-  confirm=true            # delete 시 필수
+  note_id="...",          # required for update/delete
+  title="Note title",
+  content="Note content",
+  confirm=true            # required for delete
 )
 ```
 
 ---
 
-## 6. 스튜디오
+## 6. Studio
 
 ### studio_create
 
-**리포트:**
+**Report:**
 ```
 mcp__notebooklm-mcp__studio_create(
   notebook_id="...",
@@ -237,7 +242,7 @@ mcp__notebooklm-mcp__studio_create(
 )
 ```
 
-**마인드맵:**
+**Mind map:**
 ```
 mcp__notebooklm-mcp__studio_create(
   notebook_id="...",
@@ -246,7 +251,7 @@ mcp__notebooklm-mcp__studio_create(
 )
 ```
 
-**오디오 (팟캐스트):**
+**Audio (podcast):**
 ```
 mcp__notebooklm-mcp__studio_create(
   notebook_id="...",
@@ -255,12 +260,12 @@ mcp__notebooklm-mcp__studio_create(
 )
 ```
 
-기타 artifact_type: `"video"`, `"infographic"`, `"slides"`, `"quiz"`, `"flashcards"`
+Other artifact_type values: `"video"`, `"infographic"`, `"slides"`, `"quiz"`, `"flashcards"`
 
-### studio_create 주요 옵션
+### studio_create key options
 
-| artifact_type | 주요 옵션 | 값 |
-|---------------|----------|-----|
+| artifact_type | Option | Values |
+|---------------|--------|--------|
 | audio | audio_format | "deep_dive" \| "brief" \| "critique" \| "debate" |
 | audio | audio_length | "short" \| "default" \| "long" |
 | video | video_format | "explainer" \| "brief" |
@@ -269,15 +274,15 @@ mcp__notebooklm-mcp__studio_create(
 | infographic | detail_level | "simple" \| "detailed" |
 | infographic | infographic_style | "timeline" \| "comparison" \| "flowchart" \| "hierarchy" \| "statistics" \| "process" \| "geographic" \| "listicle" \| "mixed" |
 | report | report_format | "Briefing Doc" \| "Study Guide" \| "Blog Post" \| "Create Your Own" |
-| report | custom_prompt | 사용자 지정 프롬프트 |
+| report | custom_prompt | user-supplied prompt |
 | slide_deck | slide_format | "detailed_deck" \| "presenter_slides" |
-| slide_deck | slide_length | 정수 (슬라이드 수) |
-| data_table | description | 테이블 설명 (필수) |
-| mind_map | title | 마인드맵 제목 |
-| quiz | question_count | 정수 (기본 2) |
+| slide_deck | slide_length | integer (slide count) |
+| data_table | description | table description (required) |
+| mind_map | title | mind-map title |
+| quiz | question_count | integer (default 2) |
 | quiz/flashcards | difficulty | "easy" \| "medium" \| "hard" |
 
-공통 옵션: `language` (BCP-47 코드, 기본 "ko"), `focus_prompt` (집중 주제), `source_ids` (특정 소스만 사용)
+Common options: `language` (BCP-47 code, default "en"), `focus_prompt` (focus topic), `source_ids` (specific sources only)
 
 ### studio_status
 
@@ -285,18 +290,18 @@ mcp__notebooklm-mcp__studio_create(
 mcp__notebooklm-mcp__studio_status(notebook_id="...")
 ```
 
-반환: 아티팩트 배열 `[{ type, status, created_at }]`
+Returns: artifact array `[{ type, status, created_at }]`
 status: `"pending"` | `"in_progress"` | `"completed"` | `"failed"`
 
-생성 후 완료까지 폴링 필요. 5초 간격 권장.
+Polling required after creation. 5-second interval is recommended.
 
-### rename (아티팩트 이름 변경)
+### rename (rename artifact)
 ```
 mcp__notebooklm-mcp__studio_status(
   notebook_id="...",
   action="rename",
   artifact_id="...",
-  new_title="새 이름"
+  new_title="New name"
 )
 ```
 
@@ -306,12 +311,12 @@ mcp__notebooklm-mcp__studio_status(
 mcp__notebooklm-mcp__studio_revise(
   notebook_id="...",
   artifact_id="...",
-  slide_instructions=[{"slide": 3, "instruction": "데이터 차트 추가"}],
+  slide_instructions=[{"slide": 3, "instruction": "Add a data chart"}],
   confirm=true
 )
 ```
 
-기존 슬라이드 덱의 개별 슬라이드 수정. 새 아티팩트를 생성하며 원본은 유지됨.
+Edits individual slides in an existing deck. Creates a new artifact; the original is preserved.
 
 ### studio_delete
 
@@ -325,14 +330,14 @@ mcp__notebooklm-mcp__studio_delete(notebook_id="...", artifact_id="...", confirm
 mcp__notebooklm-mcp__download_artifact(
   notebook_id="...",
   artifact_type="report",
-  artifact_id="...",       # 선택: 동일 유형 아티팩트가 여러 개일 때 특정 지정
+  artifact_id="...",       # optional: pin to a specific instance when multiple of the same type exist
   output_path="~/research-output/my_report.md",
-  output_format="markdown" # 선택: "json" | "markdown" | "html" (quiz/flashcards용)
+  output_format="markdown" # optional: "json" | "markdown" | "html" (for quiz/flashcards)
 )
 ```
 
 artifact_type: `"report"` | `"audio"` | `"video"` | `"slides"` | `"quiz"` | `"flashcards"` | `"mind_map"` | `"infographic"` | `"data_table"`
-옵션: `slide_deck_format` (`"pdf"` | `"pptx"`), `artifact_id` (동일 유형 복수 시), `output_format` (`"json"` | `"markdown"` | `"html"` - quiz/flashcards용)
+Options: `slide_deck_format` (`"pdf"` | `"pptx"`), `artifact_id` (when multiple of the same type), `output_format` (`"json"` | `"markdown"` | `"html"` — for quiz/flashcards)
 
 ### export_artifact
 
@@ -341,44 +346,44 @@ mcp__notebooklm-mcp__export_artifact(
   notebook_id="...",
   artifact_id="...",
   export_type="docs",   # "docs" | "sheets"
-  title="내보내기 제목"   # 선택: Google Docs/Sheets 문서 제목
+  title="Export title"   # optional: Google Docs/Sheets document title
 )
 ```
 
-Google Docs/Sheets로 내보내기. Data Table → Sheets, Report → Docs.
+Export to Google Docs/Sheets. Data Table → Sheets, Report → Docs.
 
 ---
 
-## 7. 리서치 (소스 자동 발견)
+## 7. Research (source discovery)
 
 ### research_start
 
 ```
 mcp__notebooklm-mcp__research_start(
-  query="AI agent framework 비교 분석",
-  notebook_id="...",    # 선택: 미제공 시 새 노트북 자동 생성
-  title="...",          # 선택: 새 노트북 제목
+  query="AI agent framework comparison",
+  notebook_id="...",    # optional: creates a new notebook if absent
+  title="...",          # optional: title for the new notebook
   source="web",         # "web" | "drive"
   mode="fast"           # "fast" | "deep"
 )
 ```
 
-반환: `{ task_id: "..." }`
+Returns: `{ task_id: "..." }`
 
 ### research_status
 
 ```
 mcp__notebooklm-mcp__research_status(
   notebook_id="...",
-  task_id="...",         # 선택: 특정 태스크 폴링
-  poll_interval=30,      # 폴링 간격 (초, 기본 30)
-  max_wait=300,          # 최대 대기 (초, 기본 300, 0=단일 폴링)
-  compact=true,          # 토큰 절약용 요약 (기본 true)
-  query="..."            # 선택: task_id 변경 시 fallback 매칭
+  task_id="...",         # optional: poll a specific task
+  poll_interval=30,      # interval seconds (default 30)
+  max_wait=300,          # max wait seconds (default 300, 0 = single poll)
+  compact=true,          # token-saving summary (default true)
+  query="..."            # optional: fallback when task_id has changed
 )
 ```
 
-반환: `{ status, results: [{ title, url, snippet }] }`
+Returns: `{ status, results: [{ title, url, snippet }] }`
 
 ### research_import
 
@@ -386,62 +391,62 @@ mcp__notebooklm-mcp__research_status(
 mcp__notebooklm-mcp__research_import(
   notebook_id="...",
   task_id="...",
-  source_indices=[0, 2, 4]    # 발견된 소스 중 가져올 인덱스
+  source_indices=[0, 2, 4]    # indices of discovered sources to import
 )
 ```
 
 ---
 
-## 8. 에러 코드 및 해결법
+## 8. Error codes and remediation
 
-| 에러 | 원인 | 해결 |
-|------|------|------|
-| `AUTH_EXPIRED` | 토큰 만료 (~20분) | `refresh_auth()` → 실패 시 `nlm login` |
-| `AUTH_REQUIRED` | 미인증 | `nlm login` 실행 |
-| `SOURCE_FAILED` | URL 접근 불가 | URL 유효성 확인, 비공개 영상/차단 사이트 여부 확인 |
-| `QUOTA_EXCEEDED` | 노트북당 소스 50개 초과 | 주제별 노트북 분할 |
-| `STUDIO_FAILED` | 아티팩트 생성 실패 | 소스 수/크기 확인 후 재시도, 대체 유형 시도 |
-| `RATE_LIMITED` | API 호출 빈도 초과 | 2~5초 대기 후 재시도 |
-| `NOT_FOUND` | 노트북/소스 ID 잘못됨 | `notebook_list`로 ID 재확인 |
-| `NETWORK_ERROR` | 네트워크 연결 문제 | 연결 확인 후 재시도 |
+| Error | Cause | Remediation |
+|-------|-------|-------------|
+| `AUTH_EXPIRED` | Token expired (~20 min) | `refresh_auth()` → if failed, `nlm login` |
+| `AUTH_REQUIRED` | Not authenticated | Run `nlm login` |
+| `SOURCE_FAILED` | URL inaccessible | Verify URL; check for private videos or blocked sites |
+| `QUOTA_EXCEEDED` | More than 50 sources per notebook | Split by topic into multiple notebooks |
+| `STUDIO_FAILED` | Artifact creation failed | Verify source count/size, retry, try an alternative type |
+| `RATE_LIMITED` | API rate exceeded | Wait 2-5 seconds and retry |
+| `NOT_FOUND` | Wrong notebook/source ID | Re-check ID via `notebook_list` |
+| `NETWORK_ERROR` | Network connectivity issue | Verify connection and retry |
 
-### Rate Limit 권장 간격
+### Recommended rate-limit intervals
 
-| 작업 유형 | 간격 |
-|-----------|------|
-| source_add | 2초 |
-| studio_create | 5초 |
-| research_* | 2초 |
-| notebook_query | 2초 |
+| Operation | Interval |
+|-----------|----------|
+| source_add | 2s |
+| studio_create | 5s |
+| research_* | 2s |
+| notebook_query | 2s |
 
 ---
 
-## 9. CLI 명령어 (MCP 보완용)
+## 9. CLI commands (MCP companion)
 
-MCP에 없거나 CLI가 더 편리한 경우 사용.
+Use these when MCP is missing the feature or the CLI is more convenient.
 
 ```bash
-# 다운로드 (포맷/경로 옵션 풍부)
+# Download (richer format/path options)
 nlm download report <notebook-id> --output <path>
 nlm download audio <notebook-id> --output <path>
 nlm download slide-deck <notebook-id> --output <path> --format pptx
 nlm download quiz <notebook-id> --output <path> --format json
 
-# Alias 관리 (MCP에 없음)
+# Alias management (no MCP equivalent)
 nlm alias set <name> <notebook-id>
 nlm alias get <name>
 nlm alias list
 
-# 소스 목록
+# Source listing
 nlm source list <notebook-id>
 
-# 스튜디오 상태
+# Studio status
 nlm studio status <notebook-id>
 
-# 리서치 폴링 (장시간)
+# Research polling (long running)
 nlm research status <notebook-id> --task-id <id> --max-wait 0
 
-# 설정/프로필 (MCP에 없음)
+# Config / profile (no MCP equivalent)
 nlm config list
 nlm login switch <profile>
 ```
