@@ -112,3 +112,64 @@ def list_notebooks() -> list[dict[str, Any]]:
     if isinstance(data, dict):
         return data.get("notebooks") or data.get("items") or []
     return data if isinstance(data, list) else []
+
+
+def _extract_id(data: Any) -> str | None:
+    if isinstance(data, dict):
+        return data.get("id") or data.get("notebook_id") or data.get("notebookId")
+    return None
+
+
+def notebook_summary(notebook_id: str) -> dict[str, Any]:
+    """Find a notebook's row (with source_count) in the list output."""
+    for nb in list_notebooks():
+        if (nb.get("id") or nb.get("notebook_id") or nb.get("notebookId")) == notebook_id:
+            return nb
+    return {}
+
+
+# --- Collect ---------------------------------------------------------------
+
+def create_notebook(title: str) -> dict[str, Any]:
+    data = nlm_json("notebook", "create", title, "--json", timeout=60)
+    return {"notebook_id": _extract_id(data), "title": title, "raw": data}
+
+
+def add_sources(notebook_id: str, urls: list[str], wait: bool = True,
+                wait_timeout: int = 300) -> dict[str, Any]:
+    """Add URLs/YouTube links to a notebook (bulk, with repeated flags)."""
+    args = ["source", "add", notebook_id]
+    for url in urls:
+        if "youtube.com" in url or "youtu.be" in url:
+            args += ["--youtube", url]
+        else:
+            args += ["--url", url]
+    if wait:
+        args += ["--wait", "--wait-timeout", str(wait_timeout)]
+    return nlm(*args, timeout=wait_timeout + 60)
+
+
+# --- Analyze ---------------------------------------------------------------
+
+def create_report(notebook_id: str, report_format: str = "Briefing Doc",
+                  language: str = "en", timeout: int = 600) -> dict[str, Any]:
+    return nlm("report", "create", notebook_id,
+               "--format", report_format, "--language", language, "-y", timeout=timeout)
+
+
+def query_notebook(notebook_id: str, question: str, timeout: int = 180) -> dict[str, Any]:
+    res = nlm("query", "notebook", notebook_id, question, "--json", timeout=timeout)
+    if not res["ok"]:
+        raise ToolError(res["stderr"] or res["stdout"] or "query failed")
+    try:
+        data = json.loads(res["stdout"])
+    except json.JSONDecodeError:
+        return {"answer": res["stdout"], "raw": None}
+    answer = None
+    if isinstance(data, dict):
+        answer = data.get("answer") or data.get("response") or data.get("text")
+    return {"answer": answer or res["stdout"], "raw": data}
+
+
+def download_report(notebook_id: str, output_path: str, timeout: int = 300) -> dict[str, Any]:
+    return nlm("download", "report", notebook_id, "-o", str(output_path), timeout=timeout)

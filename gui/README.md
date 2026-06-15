@@ -5,8 +5,8 @@ for people who prefer clicking to typing. It is an **alternative driver**, not a
 replacement: the CLI remains the canonical pipeline, and both share the same
 `~/research-output/` state (ADR-0012 / ADR-0013 in [`../architecture.md`](../architecture.md)).
 
-> **Status:** scaffold. Search, auth status, and the notebook dashboard are wired
-> end-to-end. Collect / Analyze / Media / Organize / Share are stubbed pages whose
+> **Status:** scaffold. **Search, Collect, Analyze**, auth status, and the notebook
+> dashboard are wired end-to-end. Media / Organize / Share remain stubbed pages whose
 > backend returns `501` with the `nlm` command they will run. Tracked in
 > [`../backlog.md`](../backlog.md) → Epic 6; flows in [`../user-flow.md`](../user-flow.md) → §8.
 
@@ -63,7 +63,14 @@ gui/
 | GET | `/api/auth` | `nlm login --check` |
 | POST | `/api/search` | `youtube_search.py --json` |
 | GET | `/api/notebooks` | `nlm notebook list --json` |
-| POST | `/api/{collect,analyze,media,organize,share}` | `501` stub (planned command in body) |
+| POST | `/api/collect` | `nlm notebook create` (if new) + `nlm source add … --wait` |
+| POST | `/api/analyze` | `nlm report create` + `nlm query notebook --json` + `nlm download report` |
+| POST | `/api/{media,organize,share}` | `501` stub (planned command in body) |
+
+Collect and Analyze are **synchronous** and use `--wait` / Studio generation, so a
+request can stay open for a few minutes. Progress streaming (SSE/websocket) is the
+next Epic 6 item. Collect/Analyze also write `~/research-output/last_session.json`
+(and append to `research_sessions.jsonl`) so the CLI's `/research status` sees them.
 
 ## Next steps (Epic 6)
 

@@ -12,16 +12,45 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import config
-from .nlm_runner import ToolError, auth_check, list_notebooks, search_youtube
+from . import config, sessions
+from .nlm_runner import (
+    ToolError,
+    add_sources,
+    auth_check,
+    create_notebook,
+    create_report,
+    download_report,
+    list_notebooks,
+    notebook_summary,
+    query_notebook,
+    search_youtube,
+)
 
 app = FastAPI(title="Research GUI", version="0.1.0")
+
+DEFAULT_QUESTION = "Summarize the top 5 key insights in a structured format."
 
 
 class SearchRequest(BaseModel):
     query: str
     num: int = 10
     newest_first: bool = False
+
+
+class CollectRequest(BaseModel):
+    urls: list[str]
+    notebook_id: str | None = None
+    topic: str | None = None
+    wait: bool = True
+
+
+class AnalyzeRequest(BaseModel):
+    notebook_id: str
+    topic: str | None = None
+    report_format: str = "Briefing Doc"
+    language: str = "en"
+    question: str | None = DEFAULT_QUESTION
+    download: bool = True
 
 
 @app.exception_handler(ToolError)
@@ -54,11 +83,94 @@ def notebooks() -> dict:
     return {"count": len(items), "notebooks": items}
 
 
+@app.post("/api/collect")
+def collect(req: CollectRequest) -> dict:
+    """Add selected videos to a notebook (creating one if needed).
+
+    Synchronous + `--wait`, so this can take a few minutes while NotebookLM
+    processes sources. Progress streaming is the Epic 6 follow-up.
+    """
+    if not req.urls:
+        raise HTTPException(status_code=400, detail="no urls provided")
+
+    notebook_id = req.notebook_id
+    title = None
+    created = False
+    if not notebook_id:
+        topic = (req.topic or "Research").strip()
+        title = f"Research: {topic} - {sessions.today()}"
+        nb = create_notebook(title)
+        notebook_id = nb["notebook_id"]
+        created = True
+        if not notebook_id:
+            raise ToolError("notebook creation did not return an id")
+
+    add = add_sources(notebook_id, req.urls, wait=req.wait)
+    summary = notebook_summary(notebook_id)
+
+    session = {
+        "notebook_id": notebook_id,
+        "topic": req.topic or "",
+        "title": title or summary.get("title"),
+        "updated_at": sessions.now_iso(),
+        "status": "collected",
+        "source_count": summary.get("source_count"),
+        "urls": req.urls,
+        "via": "gui",
+    }
+    sessions.write_last_session(session)
+    if created:
+        sessions.append_session(session)
+
+    return {
+        "notebook_id": notebook_id,
+        "created": created,
+        "title": title or summary.get("title"),
+        "requested": len(req.urls),
+        "source_count": summary.get("source_count"),
+        "add_ok": add["ok"],
+        "detail": add["stdout"] or add["stderr"],
+    }
+
+
+@app.post("/api/analyze")
+def analyze(req: AnalyzeRequest) -> dict:
+    """Generate a report, optionally run a Q&A, and optionally download the report."""
+    if not req.notebook_id.strip():
+        raise HTTPException(status_code=400, detail="notebook_id is required")
+
+    result: dict = {"notebook_id": req.notebook_id}
+
+    report = create_report(req.notebook_id, req.report_format, req.language)
+    result["report_ok"] = report["ok"]
+    result["report_detail"] = report["stdout"] or report["stderr"]
+
+    if req.question:
+        try:
+            qa = query_notebook(req.notebook_id, req.question)
+            result["answer"] = qa["answer"]
+        except ToolError as exc:
+            result["answer_error"] = str(exc)
+
+    if req.download and report["ok"]:
+        topic = req.topic or "research"
+        out = sessions.topic_dir(topic) / f"{sessions.slug(topic)}_report.md"
+        dl = download_report(req.notebook_id, str(out))
+        result["downloaded"] = str(out) if dl["ok"] else None
+        result["download_detail"] = dl["stdout"] or dl["stderr"]
+
+    last = sessions.read_last_session()
+    if last.get("notebook_id") == req.notebook_id:
+        last["status"] = "analyzed"
+        last["updated_at"] = sessions.now_iso()
+        sessions.write_last_session(last)
+
+    return result
+
+
 # --- Stubs for stages not yet wired (return 501 with the planned command) ---
 
 _PLANNED = {
-    "collect": "nlm source add <notebook> --url <url>   (per selected video)",
-    "analyze": "nlm report create <notebook>  +  nlm query <notebook>",
     "media": "nlm <video|flashcards|mindmap|infographic|data-table> create <notebook>",
     "organize": "nlm label auto <notebook>",
     "share": "nlm share public|invite <notebook>  /  nlm export docs|sheets <notebook>",

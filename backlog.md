@@ -100,15 +100,17 @@ with a backend that shells out to `nlm` + `youtube_search.py` (ADR-0013). The CL
 remains the canonical pipeline; the GUI is an alternative driver over the same
 `~/research-output/` state. See `user-flow.md` §8.
 
-- [ ] Decide stack specifics (backend: FastAPI vs Express; UI: framework/plain) and a `research-gui` launch entry point
-- [ ] Backend: thin `nlm`/`youtube_search.py` process-runner; parse `nlm --json`; stream progress (SSE/websocket); `localhost`-bind only
-- [ ] Pages mirroring subcommands: Search · Collect · Analyze · Media · Organize · Share · Dashboard
+- [x] Decide stack specifics (FastAPI backend + no-build plain-JS UI) and a `python gui/run.py` launch entry point
+- [~] Backend: thin `nlm`/`youtube_search.py` process-runner; parse `nlm --json`; `localhost`-bind only — **done**; stream progress (SSE/websocket) — **pending**
+- [~] Pages mirroring subcommands — Search · Collect · Analyze · Dashboard **wired**; Media · Organize · Share **stubbed (501)**
 - [ ] "Run preset" one-click flow (GUI equivalent of `/research run --auto`) with a step progress stepper
-- [ ] Auth pill reflecting v0.7.x states (ok / unverified-retrying / stale-relogin); shared auth with the CLI
-- [ ] Error-path UX: Tier-1 inline notes, Tier-2 per-artifact Retry, Tier-3 blocking banner with remedy
-- [ ] Reuse `~/research-output/` state so CLI ⇄ GUI sessions interoperate (no separate store)
-- [ ] Keep GUI behavior-identical to the CLI (every action maps to an `nlm` command — no GUI-only capabilities)
-- [ ] Docs: README run instructions; cross-link from `architecture.md` / `user-flow.md` / `CLAUDE.md`
+- [~] Auth pill — ok / stale wired; **unverified-retrying pending**; shared auth with the CLI ✓
+- [~] Error-path UX — Tier-1/Tier-3 banners wired; **Tier-2 per-artifact Retry pending**
+- [x] Reuse `~/research-output/` state so CLI ⇄ GUI sessions interoperate (Collect/Analyze write last_session.json + sessions.jsonl)
+- [x] Keep GUI behavior-identical to the CLI (every action maps to an `nlm` command — no GUI-only capabilities)
+- [~] Docs: GUI README ✓; cross-link from `architecture.md` ✓ / `user-flow.md` ✓ / `CLAUDE.md` **pending**
+- [ ] Wire remaining stages: Media, Organize, Share (→ their `nlm` commands)
+- [ ] Fix latent Windows cp1252 crash in `youtube_search.py` itself (GUI works around it via child UTF-8 env)
 
 ---
 
