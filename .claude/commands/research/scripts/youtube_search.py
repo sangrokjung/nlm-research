@@ -207,6 +207,14 @@ def main():
 
     args = parser.parse_args()
 
+    # Force UTF-8 stdout/stderr: on Windows a piped stream defaults to cp1252 and
+    # crashes when printing non-Latin-1 characters (e.g. an em dash in a title).
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
+
     if not args.query:
         parser.print_help()
         sys.exit(1)

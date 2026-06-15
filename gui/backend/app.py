@@ -105,6 +105,24 @@ _MEDIA = {
 }
 
 
+class RunRequest(BaseModel):
+    topic: str
+    preset: str = "default"
+    count: int | None = None        # overrides preset default
+    language: str = "en"
+
+
+# preset -> search behavior + extra media artifacts (report + Q&A always run).
+# Artifacts are limited to the wired media types (no audio/quiz yet).
+_PRESETS = {
+    "default":       {"count": 5, "newest": False, "artifacts": []},
+    "trend-report":  {"count": 5, "newest": True,  "artifacts": []},
+    "study-pack":    {"count": 5, "newest": False, "artifacts": ["flashcards", "mindmap"]},
+    "explainer":     {"count": 5, "newest": False, "artifacts": ["video"]},
+    "visual-report": {"count": 5, "newest": False, "artifacts": ["infographic", "mindmap", "datatable"]},
+}
+
+
 @app.exception_handler(ToolError)
 async def _tool_error_handler(_request, exc: ToolError):
     return JSONResponse(status_code=502, content={"error": str(exc)})
@@ -311,9 +329,63 @@ def media(req: MediaRequest) -> dict:
     return do_media(req)
 
 
+def do_run(req: RunRequest, emit=_noop) -> dict:
+    """One-click pipeline: search → collect → analyze → preset artifacts.
+
+    GUI equivalent of `/research run <topic> --preset <name> --auto`.
+    """
+    if not req.topic.strip():
+        raise HTTPException(status_code=400, detail="topic is required")
+    preset = _PRESETS.get(req.preset)
+    if preset is None:
+        raise HTTPException(status_code=400, detail=f"unknown preset: {req.preset}")
+    count = req.count or preset["count"]
+
+    emit({"type": "progress", "msg": f"[search] “{req.topic}” (top {count})…"})
+    results = search_youtube(req.topic, num=count, newest_first=preset["newest"])
+    urls = [r.get("url") for r in results if r.get("url")][:count]
+    if not urls:
+        raise ToolError(f"no videos found for “{req.topic}”")
+    emit({"type": "progress", "msg": f"[search] {len(urls)} videos selected."})
+
+    emit({"type": "progress", "msg": "[collect] adding sources…"})
+    collected = do_collect(CollectRequest(urls=urls, topic=req.topic), emit)
+    notebook_id = collected["notebook_id"]
+
+    emit({"type": "progress", "msg": "[analyze] report + Q&A…"})
+    analyzed = do_analyze(
+        AnalyzeRequest(notebook_id=notebook_id, topic=req.topic, language=req.language), emit
+    )
+
+    artifacts = []
+    for art_type in preset["artifacts"]:
+        emit({"type": "progress", "msg": f"[media] {art_type}…"})
+        m = do_media(
+            MediaRequest(notebook_id=notebook_id, type=art_type, topic=req.topic, language=req.language),
+            emit,
+        )
+        artifacts.append({
+            "type": art_type,
+            "status": m.get("artifact_status"),
+            "downloaded": m.get("downloaded"),
+        })
+
+    emit({"type": "progress", "msg": "[done] pipeline complete."})
+    return {
+        "notebook_id": notebook_id,
+        "preset": req.preset,
+        "source_count": collected.get("source_count"),
+        "report_status": analyzed.get("report_status"),
+        "report_downloaded": analyzed.get("downloaded"),
+        "answer": analyzed.get("answer"),
+        "artifacts": artifacts,
+    }
+
+
 # --- Job + SSE streaming for the long stages (ADR-0012 / backlog Epic 6) ----
 
 _JOB_STAGES = {
+    "run": (RunRequest, do_run),
     "collect": (CollectRequest, do_collect),
     "analyze": (AnalyzeRequest, do_analyze),
     "media": (MediaRequest, do_media),

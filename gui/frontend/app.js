@@ -3,11 +3,11 @@
 // wired to the backend; the rest are placeholders showing the planned command.
 
 const PAGES = [
-  "Search", "Collect", "Analyze", "Media", "Organize", "Share", "Dashboard",
+  "Run", "Search", "Collect", "Analyze", "Media", "Organize", "Share", "Dashboard",
 ];
 
 const state = {
-  page: "Search",
+  page: "Run",
   lastResults: [],
   lastQuery: "",
   selectedUrls: [],
@@ -95,6 +95,70 @@ function go(page) {
 }
 
 // --- pages -----------------------------------------------------------------
+function runPage() {
+  const wrap = el("div", { class: "card" });
+  const topic = el("input", { type: "text", placeholder: "Research topic, e.g. AI agent trends 2026", value: state.topic || state.lastQuery || "" });
+  const preset = el("select", {}, ...["default", "trend-report", "study-pack", "explainer", "visual-report"].map((p) => el("option", { value: p }, p)));
+  const count = el("input", { type: "number", value: "5", min: "1", max: "20", style: "width:70px" });
+  const lang = el("input", { type: "text", value: "en", style: "width:70px" });
+  const out = el("div", {});
+
+  const PRESET_NOTE = {
+    "default": "report + Q&A",
+    "trend-report": "report + Q&A (newest-first search)",
+    "study-pack": "report + flashcards + mind map",
+    "explainer": "report + video overview",
+    "visual-report": "report + infographic + mind map + data table",
+  };
+  const note = el("div", { class: "muted" }, PRESET_NOTE["default"]);
+  preset.addEventListener("change", () => { note.textContent = PRESET_NOTE[preset.value] || ""; });
+
+  const btn = el("button", { class: "primary" }, "Run pipeline");
+  btn.addEventListener("click", async () => {
+    const t = topic.value.trim();
+    if (!t) { out.replaceChildren(el("div", { class: "banner err" }, "Enter a topic.")); return; }
+    state.topic = t; state.lastQuery = t;
+    btn.disabled = true;
+    const log = progressLog();
+    out.replaceChildren(log.box);
+    let body;
+    try {
+      body = await runJob("run", { topic: t, preset: preset.value, count: Number(count.value) || 5, language: lang.value.trim() || "en" }, log.push);
+    } catch (e) {
+      out.replaceChildren(el("div", { class: "banner err" }, e.message));
+      btn.disabled = false; return;
+    }
+    btn.disabled = false;
+    state.notebookId = body.notebook_id;
+    const kids = [el("div", { class: "banner info" },
+      `Notebook ${body.notebook_id} · ${body.source_count ?? "?"} sources · report: ${body.report_status || "?"}${body.report_downloaded ? " (saved)" : ""}`)];
+    if (body.artifacts && body.artifacts.length) {
+      const list = el("div", { class: "results" });
+      body.artifacts.forEach((a) => list.append(el("div", { class: "result" },
+        el("span", {}, "•"), el("div", { class: "title" }, a.type),
+        el("div", { class: "meta" }, `${a.status || "?"}${a.downloaded ? " · saved" : ""}`))));
+      kids.push(el("h2", { style: "margin-top:14px" }, "Artifacts"), list);
+    }
+    if (body.answer) kids.push(el("div", { class: "card" }, el("h2", {}, "Q&A"), el("div", { html: body.answer.replace(/\n/g, "<br>") })));
+    kids.push(el("button", { class: "primary", onclick: () => go("Dashboard") }, "Open Dashboard"));
+    out.replaceChildren(...kids);
+  });
+
+  wrap.append(
+    el("h1", {}, "Run pipeline"),
+    el("p", { class: "sub" }, "One click: search → collect → analyze → preset artifacts. Streams live progress."),
+    el("div", { class: "row" }, topic),
+    el("div", { class: "row" },
+      el("label", {}, "Preset"), preset,
+      el("label", {}, "Videos"), count,
+      el("label", {}, "Lang"), lang),
+    note,
+    el("div", { class: "row", style: "margin-top:12px" }, btn),
+    out,
+  );
+  return wrap;
+}
+
 function searchPage() {
   const wrap = el("div", { class: "card" });
   const input = el("input", { type: "text", placeholder: "Research topic, e.g. AI agent trends 2026" });
@@ -431,6 +495,7 @@ function placeholder(page) {
 }
 
 const PAGE_RENDERERS = {
+  Run: runPage,
   Search: searchPage,
   Collect: collectPage,
   Analyze: analyzePage,
@@ -444,4 +509,4 @@ const PAGE_RENDERERS = {
 renderNav();
 refreshAuth();
 setInterval(refreshAuth, 60000);
-go("Search");
+go("Run");

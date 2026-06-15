@@ -105,14 +105,14 @@ remains the canonical pipeline; the GUI is an alternative driver over the same
 - [x] Stream progress (SSE): `POST /api/jobs/{collect|analyze|media}` + `GET /api/jobs/{id}/stream`; frontend uses EventSource for a live progress log (poll ticks emitted via wait_for_artifact on_poll). Live-validated.
 - [x] Pages mirroring subcommands — Search · Collect · Analyze · **Media · Organize · Share** · Dashboard all wired (live-validated: organize list → 3 AI labels; share status; media mindmap create+poll)
 - [ ] Upstream `nlm` bug: `nlm download mind-map` fails (artifact generates fine; report/flashcards/infographic/data-table/video downloads work). GUI degrades gracefully (completed + download error). Track for an nlm upgrade.
-- [ ] "Run preset" one-click flow (GUI equivalent of `/research run --auto`) with a step progress stepper
+- [x] "Run preset" one-click flow (GUI equivalent of `/research run --auto`): `POST /api/jobs/run` orchestrates search→collect→analyze→preset artifacts, streaming progress. Presets: default, trend-report, study-pack, explainer, visual-report. Live-validated (default, 2 videos → report completed + Q&A).
 - [~] Auth pill — ok / stale wired; **unverified-retrying pending**; shared auth with the CLI ✓
 - [~] Error-path UX — Tier-1/Tier-3 banners wired; **Tier-2 per-artifact Retry pending**
 - [x] Reuse `~/research-output/` state so CLI ⇄ GUI sessions interoperate (Collect/Analyze write last_session.json + sessions.jsonl)
 - [x] Keep GUI behavior-identical to the CLI (every action maps to an `nlm` command — no GUI-only capabilities)
 - [~] Docs: GUI README ✓; cross-link from `architecture.md` ✓ / `user-flow.md` ✓ / `CLAUDE.md` **pending**
 - [ ] Wire remaining stages: Media, Organize, Share (→ their `nlm` commands)
-- [ ] Fix latent Windows cp1252 crash in `youtube_search.py` itself (GUI works around it via child UTF-8 env)
+- [x] Fix latent Windows cp1252 crash in `youtube_search.py` itself — `sys.stdout/stderr.reconfigure(encoding="utf-8")` at startup (both skills + commands copies). Verified via piped output. GUI's child UTF-8 env now belt-and-suspenders.
 
 ---
 

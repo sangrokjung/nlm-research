@@ -74,12 +74,17 @@ gui/
 | POST | `/api/media` | `nlm <video\|flashcards\|mindmap\|infographic\|data-table> create` + poll + `nlm download` |
 | POST | `/api/organize` | `nlm label auto\|list\|move --json` |
 | POST | `/api/share` | `nlm share status\|public\|private\|invite` · `nlm export to-docs\|to-sheets` |
-| POST | `/api/jobs/{collect\|analyze\|media}` | start a background job → `{job_id}` |
+| POST | `/api/jobs/{run\|collect\|analyze\|media}` | start a background job → `{job_id}` |
 | GET | `/api/jobs/{job_id}/stream` | SSE progress stream (`started`/`progress`/`done`/`error`) |
 
-Collect / Analyze / Media run as background **jobs** that stream progress over
-Server-Sent Events; the frontend uses `EventSource` to show a live log. The plain
-synchronous `POST /api/{collect,analyze,media}` endpoints still exist for scripting.
+`run` is the **one-click pipeline** (search → collect → analyze → preset artifacts),
+the GUI equivalent of `/research run <topic> --preset <name> --auto`. Presets:
+`default`, `trend-report`, `study-pack` (+flashcards +mindmap), `explainer` (+video),
+`visual-report` (+infographic +mindmap +datatable).
+
+Collect / Analyze / Media / Run execute as background **jobs** that stream progress
+over Server-Sent Events; the frontend uses `EventSource` to show a live log. The
+plain synchronous `POST /api/{collect,analyze,media}` endpoints still exist for scripting.
 
 Collect and Analyze are **synchronous** and use `--wait` / Studio generation, so a
 request can stay open for a few minutes. Progress streaming (SSE/websocket) is the
