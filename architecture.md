@@ -18,6 +18,15 @@ YouTube search ──▶ NotebookLM collection ──▶ AI analysis ──▶ S
    (yt-dlp)          (MCP source_add)        (MCP query)     (MCP studio_create)   (nlm download)
 ```
 
+### Two front-ends, one pipeline
+
+The same pipeline is driven by two interchangeable front-ends (ADR-0012):
+
+1. **Conversational CLI** — the `/research …` skill inside Claude Code (the original surface).
+2. **Local web GUI** *(planned)* — a browser app served by a small local backend that shells out to the `nlm` CLI and `youtube_search.py` (ADR-0013).
+
+Both converge on the same integration layer and the same `~/research-output/` state, so a session started in one is visible in the other.
+
 ### Quality attributes (what the architecture optimizes for)
 
 | Attribute | How it is achieved |
@@ -33,33 +42,40 @@ YouTube search ──▶ NotebookLM collection ──▶ AI analysis ──▶ S
 ## 2. Component model
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Claude Code (agent runtime)                                          │
-│                                                                       │
-│   SKILL.md  ── router / auth gate ──┐                                 │
-│                                     ▼                                 │
-│   ┌──────────┬──────────┬──────────┬──────────┬──────────┐           │
-│   │ search   │ collect  │ analyze  │ export   │ status   │  existing │
-│   ├──────────┼──────────┼──────────┼──────────┼──────────┤           │
-│   │ run (orchestrates the above inline)        │ drive    │           │
-│   ├──────────┬──────────┬──────────────────────┴──────────┤           │
-│   │ media    │ organize │ share          (planned — v0.7.2)│  new     │
-│   └──────────┴──────────┴───────────────────────────────-─┘           │
-│         │            │            │                                   │
-└─────────┼────────────┼────────────┼───────────────────────────────────┘
-          │ scripts    │ MCP         │ CLI
-          ▼            ▼             ▼
-   youtube_search.py  notebooklm-mcp (stdio)   nlm  (download/export/share/label)
-       (yt-dlp)            │                          │
-                          ▼                          ▼
-                   ┌──────────────────────────────────────┐
-                   │  Google NotebookLM (cloud)            │
+FRONT-END A: Claude Code (CLI)        FRONT-END B: Local web GUI (planned)
+┌───────────────────────────────┐     ┌───────────────────────────────────┐
+│  SKILL.md ── router/auth gate  │     │  Browser UI (localhost)            │
+│   ┌────────┬────────┬────────┐ │     │   pages: Search · Collect ·        │
+│   │ search │collect │analyze │ │     │   Analyze · Media · Organize ·     │
+│   ├────────┼────────┼────────┤ │     │   Share · Dashboard                │
+│   │ export │ status │ drive  │ │     │            │ HTTP/JSON              │
+│   ├────────┴────────┴────────┤ │     │            ▼                       │
+│   │ run (orchestrates inline) │ │     │  Local backend (FastAPI/Express)   │
+│   ├────────┬────────┬────────┤ │     │   - shells out to nlm + script     │
+│   │ media  │organize│ share  │ │     │   - reads/writes research-output/  │
+│   └────────┴────────┴────────┘ │     └───────────────────────────────────┘
+└───────────────┬───────────────┘                     │
+                │                                      │
+                └──────────────┬───────────────────────┘
+                               ▼  shared integration layer
+          ┌──────────────┬───────────────────────┬──────────────────────┐
+          │ scripts      │ MCP                    │ CLI                  │
+          ▼              ▼                        ▼                      │
+   youtube_search.py   notebooklm-mcp (stdio)    nlm (download/export/   │
+       (yt-dlp)            │                      share/label/studio)    │
+                          ▼                        │                     │
+                   ┌──────────────────────────────────────┐             │
+                   │  Google NotebookLM (cloud)            │◀────────────┘
                    └──────────────────────────────────────┘
 
-   Local state:  ~/research-output/last_session.json
-                 ~/research-output/research_sessions.jsonl
-                 ~/research-output/<topic>/<artifacts>
+   Shared local state:  ~/research-output/last_session.json
+                        ~/research-output/research_sessions.jsonl
+                        ~/research-output/<topic>/<artifacts>
 ```
+
+> The CLI front-end reaches NotebookLM mainly via MCP (CLI for downloads/labels/
+> share); the GUI backend reaches it via the `nlm` CLI (ADR-0013). Both share the
+> same `~/research-output/` state, so sessions cross over between front-ends.
 
 ### Layers
 
@@ -207,6 +223,28 @@ Format: each record has **Status**, **Context**, **Decision**, **Consequences**.
 
 ---
 
+### ADR-0012 — Local web GUI as a second front-end
+**Status:** Proposed
+
+**Context.** The skill is CLI/conversational only. Some users prefer a visual surface to drive the pipeline — picking videos with checkboxes, watching artifact generation progress, browsing labels/artifacts, and sharing — without typing commands. The pipeline logic, however, should not be duplicated.
+
+**Decision.** Add a **local web application** as an additional front-end (not a replacement). It serves a browser UI from a small local backend bound to `localhost`, with pages mirroring the subcommands (Search, Collect, Analyze, Media, Organize, Share, Dashboard). The CLI front-end (ADR-0001) remains fully supported and is the canonical pipeline definition; the GUI is an alternative driver over the **same integration layer and the same `~/research-output/` state**, so sessions are visible across both. (Alternatives considered: desktop app via Tauri/Electron — heavier install; TUI — less visual. A local web app is the lightest cross-platform option.)
+
+**Consequences.** (+) Visual, install-free (browser) way to run research; lowers the barrier for non-CLI users. (+) Shared state means no migration between front-ends. (−) A second front-end to keep feature-aligned with the CLI as subcommands evolve. (−) Introduces a web stack (backend + UI) to the repo, which was previously prose-only. (−) `localhost`-bound by default for safety; exposing it externally is out of scope.
+
+---
+
+### ADR-0013 — GUI backend drives the `nlm` CLI directly
+**Status:** Proposed
+
+**Context.** The GUI backend (ADR-0012) needs to reach NotebookLM. Options: shell out to the `nlm` CLI; embed an MCP client to talk to `notebooklm-mcp`; or route commands through the Claude Agent SDK so the GUI and CLI share one "brain."
+
+**Decision.** The backend **shells out to the `nlm` CLI** (and `youtube_search.py`) directly. `nlm` already exposes every needed operation (search-adjacent scripts, `source add`, `studio`/artifact create, `download`, `label`, `share`, `export`) and is the supported v0.7.2 surface (ADR-0011). The backend is a thin process-runner that parses `nlm --json` output and streams progress to the UI.
+
+**Consequences.** (+) Thinnest possible layer; reuses the exact tool the CLI front-end already depends on. (+) No extra MCP client or SDK dependency to maintain outside Claude Code. (+) `nlm doctor` / auth flows are shared. (−) Couples the GUI to CLI output formats (mitigated by preferring `--json`). (−) No LLM-driven orchestration in the GUI path (acceptable: presets encode the workflows). Revisit via the Agent SDK if the GUI later needs conversational/agentic behavior.
+
+---
+
 ## 5. Decision index
 
 | ADR | Title | Status |
@@ -222,6 +260,8 @@ Format: each record has **Status**, **Context**, **Decision**, **Consequences**.
 | 0009 | Studio fast-track prompting | Accepted |
 | 0010 | Source labels as manage-within-NotebookLM surface | Accepted |
 | 0011 | nlm ≥ 0.7.2 version floor | Accepted |
+| 0012 | Local web GUI as a second front-end | Proposed |
+| 0013 | GUI backend drives the `nlm` CLI directly | Proposed |
 
 ---
 

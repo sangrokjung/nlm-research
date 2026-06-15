@@ -93,6 +93,25 @@ sources into themed groups *inside* NotebookLM, and see it all at a glance.
 
 ---
 
+## Epic 6 — Local web GUI front-end (P3)
+
+A browser app at `localhost` that drives the same pipeline visually (ADR-0012),
+with a backend that shells out to `nlm` + `youtube_search.py` (ADR-0013). The CLI
+remains the canonical pipeline; the GUI is an alternative driver over the same
+`~/research-output/` state. See `user-flow.md` §8.
+
+- [ ] Decide stack specifics (backend: FastAPI vs Express; UI: framework/plain) and a `research-gui` launch entry point
+- [ ] Backend: thin `nlm`/`youtube_search.py` process-runner; parse `nlm --json`; stream progress (SSE/websocket); `localhost`-bind only
+- [ ] Pages mirroring subcommands: Search · Collect · Analyze · Media · Organize · Share · Dashboard
+- [ ] "Run preset" one-click flow (GUI equivalent of `/research run --auto`) with a step progress stepper
+- [ ] Auth pill reflecting v0.7.x states (ok / unverified-retrying / stale-relogin); shared auth with the CLI
+- [ ] Error-path UX: Tier-1 inline notes, Tier-2 per-artifact Retry, Tier-3 blocking banner with remedy
+- [ ] Reuse `~/research-output/` state so CLI ⇄ GUI sessions interoperate (no separate store)
+- [ ] Keep GUI behavior-identical to the CLI (every action maps to an `nlm` command — no GUI-only capabilities)
+- [ ] Docs: README run instructions; cross-link from `architecture.md` / `user-flow.md` / `CLAUDE.md`
+
+---
+
 ## Verification (run after implementation)
 
 1. **Static** — `/research` (no args) and `/research status` still route; `SKILL.md` lists media/organize/share + new presets

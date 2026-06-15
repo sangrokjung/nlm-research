@@ -1,9 +1,10 @@
 # User Flow — `/research` skill
 
-> The `/research` "UI" is a conversational command-line surface inside Claude Code:
-> the user types `/research <subcommand> …`, the skill responds with results,
-> confirmations, and a **next-step hint** that guides them to the following command.
-> This doc maps those interaction journeys. For architecture/decisions see
+> `/research` has two front-ends over one pipeline (ADR-0012): the **conversational
+> CLI** inside Claude Code (`/research <subcommand> …` → results + a next-step hint),
+> and a **local web GUI** (planned) that drives the same flow visually. §1–§7 map the
+> CLI journeys; §8 maps the GUI. Both share `~/research-output/` state, so a session
+> started in one shows up in the other. For architecture/decisions see
 > [`architecture.md`](architecture.md); for the upgrade work see [`backlog.md`](backlog.md).
 
 ---
@@ -193,3 +194,73 @@ Outbound actions always confirm first (unless `-y`), consistent with publishing 
 | **3 — fatal** | Clear stop + the exact remedy | "Not authenticated. Run `nlm login`, then retry." / "0 sources collected — nothing to analyze." |
 
 Auth states (v0.7.x): `stale` → prompts re-login; `unverified` (transient network) → retries silently before bothering the user.
+
+---
+
+## 8. GUI user flow (planned — local web app)
+
+The GUI is a browser app at `localhost`; its backend shells out to `nlm` and
+`youtube_search.py` (ADR-0012, ADR-0013). It mirrors the CLI subcommands as pages
+and the same next-step guidance as a left-to-right stepper.
+
+### 8a. Launch & layout
+
+```
+$ research-gui            (or: nlm ... helper script — TBD)
+        │  starts local backend + opens browser at http://localhost:PORT
+        ▼
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  /research                                          [auth ●]  [⚙ docs] │
+ │  ┌────────┐                                                            │
+ │  │ Search │  Collect   Analyze   Media   Organize   Share   Dashboard  │  ← stepper / nav
+ │  └────────┘                                                            │
+ │  ──────────────────────────────────────────────────────────────────  │
+ │  (active page body)                                                    │
+ └──────────────────────────────────────────────────────────────────────┘
+ auth pill: green = ok · amber = unverified (retrying) · red = stale (re-login)
+```
+
+### 8b. Guided run (the GUI's primary journey)
+
+```
+SEARCH page   ──▶ enter topic + preset ▸ "Search"
+        │            results render as a checkbox grid (thumb, title, channel, views)
+        ▼
+ [✓ pick videos] ──▶ "Add to notebook" (Collect)         progress bar per source
+        │
+        ▼
+ANALYZE page  ──▶ preset preselected; "Generate"          live studio_status
+        │            artifact cards: report ▸ video ▸ flashcards …  (queued→running→done)
+        ▼
+ cards expose ▸ Preview ▸ Download (→ ~/research-output/<topic>/)
+        │
+        ▼
+ toast + "Next: Organize sources or Share" buttons
+```
+
+A **"Run preset" button** on the Search page collapses the whole sequence into
+one click (the GUI equivalent of `/research run --auto`), streaming each step's
+progress into the stepper.
+
+### 8c. Manage-within-NotebookLM pages
+
+```
+MEDIA     ▸ pick type (video/flashcards/mindmap/infographic/datatable) + format
+            ▸ "Generate" → progress → download/preview
+ORGANIZE  ▸ "Auto-label" → label chips appear; drag a source card onto a chip to move;
+            rename / set emoji / delete inline   (writes through to NotebookLM UI)
+SHARE     ▸ toggle Public (→ copyable link) · invite by email · "Export to Docs/Sheets"
+            ⚠️ outbound actions show a confirm modal first
+DASHBOARD ▸ table of notebooks: sources · labels · artifacts · shared?  with row actions
+```
+
+### 8d. Error-path UX (GUI)
+
+| Tier | GUI behavior |
+|------|--------------|
+| 1 — auto-recover | inline spinner + small note ("auth refreshed", "1 source skipped"); flow continues |
+| 2 — degraded | artifact card flips to "failed" with a **Retry** button; siblings unaffected |
+| 3 — fatal | blocking banner with the exact remedy (e.g. "Run `nlm login`") + a **Recheck** button |
+
+The GUI never invents capabilities the CLI lacks — every action maps to an `nlm`
+command, so CLI and GUI stay behavior-identical.
