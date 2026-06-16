@@ -56,6 +56,7 @@ body {
   border: 1px solid var(--line);
 }
 .pill-ok { color: var(--ok); border-color: var(--ok); }
+.pill-unverified { color: var(--warn); border-color: var(--warn); }
 .pill-stale, .pill-error { color: var(--bad); border-color: var(--bad); }
 .pill-unknown { color: var(--muted); }
 

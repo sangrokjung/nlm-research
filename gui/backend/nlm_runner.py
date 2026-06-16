@@ -74,15 +74,28 @@ def nlm_json(*args: str, timeout: int = 180) -> Any:
 
 # --- High-level helpers used by the API ------------------------------------
 
+# Markers that a failed auth check is a transient network blip, not real expiry
+# (mirrors the v0.7.x stale-vs-unverified split — ADR-0011).
+_TRANSIENT_AUTH = (
+    "network", "timeout", "timed out", "connection", "temporarily",
+    "unreachable", "resolve", "getaddrinfo", "ssl", "proxy", "try again",
+)
+
+
 def auth_check() -> dict[str, Any]:
-    """Map `nlm login --check` to a pill state (ok / stale)."""
+    """Map `nlm login --check` to a pill state: ok / unverified / stale / error."""
     try:
         result = nlm("login", "--check", timeout=30)
     except ToolError as exc:
         return {"state": "error", "authenticated": False, "detail": str(exc)}
+    if result["ok"]:
+        return {"state": "ok", "authenticated": True,
+                "detail": result["stdout"] or result["stderr"]}
+    detail = f"{result['stdout']} {result['stderr']}".lower()
+    transient = any(marker in detail for marker in _TRANSIENT_AUTH)
     return {
-        "state": "ok" if result["ok"] else "stale",
-        "authenticated": result["ok"],
+        "state": "unverified" if transient else "stale",
+        "authenticated": False,
         "detail": result["stdout"] or result["stderr"],
     }
 

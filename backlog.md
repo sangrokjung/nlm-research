@@ -106,8 +106,8 @@ remains the canonical pipeline; the GUI is an alternative driver over the same
 - [x] Pages mirroring subcommands — Search · Collect · Analyze · **Media · Organize · Share** · Dashboard all wired (live-validated: organize list → 3 AI labels; share status; media mindmap create+poll)
 - [ ] Upstream `nlm` bug: `nlm download mind-map` fails (artifact generates fine; report/flashcards/infographic/data-table/video downloads work). GUI degrades gracefully (completed + download error). Track for an nlm upgrade.
 - [x] "Run preset" one-click flow (GUI equivalent of `/research run --auto`): `POST /api/jobs/run` orchestrates search→collect→analyze→preset artifacts, streaming progress. Presets: default, trend-report, study-pack, explainer, visual-report. Live-validated (default, 2 videos → report completed + Q&A).
-- [~] Auth pill — ok / stale wired; **unverified-retrying pending**; shared auth with the CLI ✓
-- [~] Error-path UX — Tier-1/Tier-3 banners wired; **Tier-2 per-artifact Retry pending**
+- [x] Auth pill — ok / **unverified (amber, re-checks every 8s)** / stale (re-login) / error; classified server-side from `nlm login --check` (transient-network markers → unverified). Shared auth with the CLI ✓
+- [x] Error-path UX — Tier-1/Tier-3 banners + **Tier-2 per-artifact Retry** buttons (Media page + Run-pipeline artifact rows re-run just the failed artifact)
 - [x] Reuse `~/research-output/` state so CLI ⇄ GUI sessions interoperate (Collect/Analyze write last_session.json + sessions.jsonl)
 - [x] Keep GUI behavior-identical to the CLI (every action maps to an `nlm` command — no GUI-only capabilities)
 - [~] Docs: GUI README ✓; cross-link from `architecture.md` ✓ / `user-flow.md` ✓ / `CLAUDE.md` **pending**

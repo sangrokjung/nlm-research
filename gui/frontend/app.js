@@ -61,6 +61,31 @@ function progressLog() {
   return { box, push: (msg) => { lines.push(msg); box.textContent = lines.join("\n"); } };
 }
 
+// One artifact row with a per-artifact Retry (Tier-2 degrade): retry re-runs the
+// media job for just that type against the same notebook and updates the row.
+function mediaRow(a, notebookId, topic) {
+  const status = el("div", { class: "meta" }, `${a.status || "?"}${a.downloaded ? " · saved" : ""}`);
+  const right = el("div", { class: "row" }, status);
+  const row = el("div", { class: "result" }, el("span", {}, "•"), el("div", { class: "title" }, a.type), right);
+  if (!(a.status === "completed" && a.downloaded)) {
+    const rb = el("button", { class: "primary" }, "Retry");
+    rb.addEventListener("click", async () => {
+      rb.disabled = true;
+      try {
+        const m = await runJob("media", { notebook_id: notebookId, type: a.type, topic, download: true }, (msg) => { status.textContent = msg; });
+        const st = m.artifact_status || (m.create_ok ? "started" : "failed");
+        status.textContent = `${st}${m.downloaded ? " · saved" : ""}`;
+        if (st === "completed" && m.downloaded) rb.remove();
+      } catch (e) {
+        status.textContent = "failed: " + e.message;
+      }
+      rb.disabled = false;
+    });
+    right.append(rb);
+  }
+  return row;
+}
+
 const fmtViews = (v) => {
   if (typeof v !== "number") return v ?? "";
   if (v >= 1e6) return (v / 1e6).toFixed(1) + "M";
@@ -78,13 +103,24 @@ function renderNav() {
   );
 }
 
+let authRetryTimer = null;
+const AUTH_PILL = {
+  ok: "auth ●",
+  unverified: "verifying…",
+  stale: "re-login (nlm login)",
+  error: "auth error",
+};
+
 async function refreshAuth() {
   const pill = document.getElementById("auth-pill");
   const { ok, body } = await api("/api/auth");
   const st = (ok && body.state) || "error";
-  pill.className = "pill pill-" + (st === "ok" ? "ok" : st === "stale" ? "stale" : "error");
-  pill.textContent = st === "ok" ? "auth ●" : st === "stale" ? "re-login (nlm login)" : "auth error";
+  pill.className = "pill pill-" + (AUTH_PILL[st] ? st : "error");
+  pill.textContent = AUTH_PILL[st] || "auth error";
   pill.title = body.detail || "";
+  // Transient failure: re-check soon instead of waiting for the 60s interval.
+  clearTimeout(authRetryTimer);
+  if (st === "unverified") authRetryTimer = setTimeout(refreshAuth, 8000);
 }
 
 function go(page) {
@@ -134,9 +170,7 @@ function runPage() {
       `Notebook ${body.notebook_id} · ${body.source_count ?? "?"} sources · report: ${body.report_status || "?"}${body.report_downloaded ? " (saved)" : ""}`)];
     if (body.artifacts && body.artifacts.length) {
       const list = el("div", { class: "results" });
-      body.artifacts.forEach((a) => list.append(el("div", { class: "result" },
-        el("span", {}, "•"), el("div", { class: "title" }, a.type),
-        el("div", { class: "meta" }, `${a.status || "?"}${a.downloaded ? " · saved" : ""}`))));
+      body.artifacts.forEach((a) => list.append(mediaRow(a, body.notebook_id, t)));
       kids.push(el("h2", { style: "margin-top:14px" }, "Artifacts"), list);
     }
     if (body.answer) kids.push(el("div", { class: "card" }, el("h2", {}, "Q&A"), el("div", { html: body.answer.replace(/\n/g, "<br>") })));
@@ -397,7 +431,11 @@ function mediaPage() {
     btn.disabled = false;
     const status = body.artifact_status || (body.create_ok ? "started" : "failed");
     const tail = body.downloaded ? " · saved to " + body.downloaded : (status === "timeout" ? " · still generating — check later" : "");
-    out.replaceChildren(el("div", { class: "banner info" }, `${type.value}: ${status}${tail}`));
+    const kids = [el("div", { class: "banner info" }, `${type.value}: ${status}${tail}`)];
+    if (!(status === "completed" && body.downloaded)) {
+      kids.push(el("button", { class: "primary", onclick: () => btn.click() }, "Retry"));
+    }
+    out.replaceChildren(...kids);
   });
   sync();
   wrap.append(
