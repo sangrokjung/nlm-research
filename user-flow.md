@@ -2,8 +2,8 @@
 
 > `/research` has two front-ends over one pipeline (ADR-0012): the **conversational
 > CLI** inside Claude Code (`/research <subcommand> …` → results + a next-step hint),
-> and a **local web GUI** (planned) that drives the same flow visually. §1–§7 map the
-> CLI journeys; §8 maps the GUI. Both share `~/research-output/` state, so a session
+> and a **local web GUI** (a Preact workspace SPA, ADR-0014) that drives the same flow
+> visually. §1–§7 map the CLI journeys; §8 maps the GUI. Both share `~/research-output/` state, so a session
 > started in one shows up in the other. For architecture/decisions see
 > [`architecture.md`](architecture.md); for the upgrade work see [`backlog.md`](backlog.md).
 
@@ -197,62 +197,59 @@ Auth states (v0.7.x): `stale` → prompts re-login; `unverified` (transient netw
 
 ---
 
-## 8. GUI user flow (planned — local web app)
+## 8. GUI user flow (workspace SPA — ADR-0014)
 
-The GUI is a browser app at `localhost`; its backend shells out to `nlm` and
-`youtube_search.py` (ADR-0012, ADR-0013). It mirrors the CLI subcommands as pages
-and the same next-step guidance as a left-to-right stepper.
+The GUI is a Preact SPA at `localhost`; its backend shells out to `nlm` and
+`youtube_search.py` (ADR-0012, ADR-0013). It is **not** a mirror of the CLI
+stepper — it's a notebook **workspace**: a sidebar of notebooks on the left, a
+tabbed workspace on the right, and a guided "New research" run.
 
 ### 8a. Launch & layout
 
 ```
-$ research-gui            (or: nlm ... helper script — TBD)
-        │  starts local backend + opens browser at http://localhost:PORT
+$ python gui/run.py            opens http://127.0.0.1:8765
         ▼
- ┌──────────────────────────────────────────────────────────────────────┐
- │  /research                                          [auth ●]  [⚙ docs] │
- │  ┌────────┐                                                            │
- │  │ Search │  Collect   Analyze   Media   Organize   Share   Dashboard  │  ← stepper / nav
- │  └────────┘                                                            │
- │  ──────────────────────────────────────────────────────────────────  │
- │  (active page body)                                                    │
- └──────────────────────────────────────────────────────────────────────┘
- auth pill: green = ok · amber = unverified (retrying) · red = stale (re-login)
+ ┌──────────────────────────────────────────────────────────────────┐
+ │  /research                                      [☾/☀]   [auth ●]   │  ← topbar: theme + auth pill
+ ├───────────────┬──────────────────────────────────────────────────┤
+ │ + New research│  AI agent trends 2026                              │
+ │               │  ┌Sources │ Artifacts │ Labels │ Share┐           │
+ │ NOTEBOOKS     │  │ 📄 Jeff Su — vid                    │           │
+ │ ▸AI trends (5)│  │ 📄 IBM — vid                        │           │
+ │  NLM tips (3) │  │ 📄 a16z — vid     [+ add source]    │           │
+ │  …            │  └─────────────────────────────────────┘           │
+ └───────────────┴──────────────────────────────────────────────────┘
+ auth pill: green = ok · amber = verifying (re-checks 8s) · red = re-login
+ theme: ☾/☀ toggles light/dark (system default, saved to localStorage)
 ```
 
-### 8b. Guided run (the GUI's primary journey)
+### 8b. New research (the guided run)
 
 ```
-SEARCH page   ──▶ enter topic + preset ▸ "Search"
-        │            results render as a checkbox grid (thumb, title, channel, views)
+sidebar "+ New research"
         ▼
- [✓ pick videos] ──▶ "Add to notebook" (Collect)         progress bar per source
-        │
+ form: topic · preset (default/trend-report/study-pack/explainer/visual-report) · #videos · lang
+        │  "Run pipeline"
         ▼
-ANALYZE page  ──▶ preset preselected; "Generate"          live studio_status
-        │            artifact cards: report ▸ video ▸ flashcards …  (queued→running→done)
+ live log streams over SSE:
+   [search] N videos → [collect] sources ready → [analyze] report + Q&A → [media] … → [done]
         ▼
- cards expose ▸ Preview ▸ Download (→ ~/research-output/<topic>/)
-        │
-        ▼
- toast + "Next: Organize sources or Share" buttons
+ notebooks refresh; route jumps to the new notebook's workspace (Sources tab)
 ```
 
-A **"Run preset" button** on the Search page collapses the whole sequence into
-one click (the GUI equivalent of `/research run --auto`), streaming each step's
-progress into the stepper.
-
-### 8c. Manage-within-NotebookLM pages
+### 8c. Notebook workspace tabs (lazy-loaded per tab)
 
 ```
-MEDIA     ▸ pick type (video/flashcards/mindmap/infographic/datatable) + format
-            ▸ "Generate" → progress → download/preview
-ORGANIZE  ▸ "Auto-label" → label chips appear; drag a source card onto a chip to move;
-            rename / set emoji / delete inline   (writes through to NotebookLM UI)
-SHARE     ▸ toggle Public (→ copyable link) · invite by email · "Export to Docs/Sheets"
-            ⚠️ outbound actions show a confirm modal first
-DASHBOARD ▸ table of notebooks: sources · labels · artifacts · shared?  with row actions
+SOURCES   ▸ list sources · "+ add source" (paste URL/YouTube) → adds & refreshes
+ARTIFACTS ▸ pick type (report/video/flashcards/mindmap/infographic/datatable) ▸ "Generate"
+            → SSE log → artifact cards (status badge); failed/undownloaded → Retry
+LABELS    ▸ "Auto-label" → themed label chips with source counts · Refresh
+SHARE     ▸ Status · Make public/private · Invite (email) · Export → Docs/Sheets
+            ⚠️ outbound actions confirm first
 ```
+
+Every action maps to a backend endpoint that shells out to `nlm` — the GUI never
+invents capabilities the CLI lacks, so the two front-ends stay behavior-identical.
 
 ### 8d. Error-path UX (GUI)
 

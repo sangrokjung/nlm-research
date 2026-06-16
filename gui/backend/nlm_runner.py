@@ -142,6 +142,14 @@ def notebook_summary(notebook_id: str) -> dict[str, Any]:
     return {}
 
 
+def list_sources(notebook_id: str, timeout: int = 60) -> list[dict[str, Any]]:
+    """Return a notebook's sources via `nlm source list <id> --json`."""
+    data = nlm_json("source", "list", notebook_id, "--json", timeout=timeout)
+    if isinstance(data, dict):
+        return data.get("sources") or data.get("items") or []
+    return data if isinstance(data, list) else []
+
+
 # --- Collect ---------------------------------------------------------------
 
 def create_notebook(title: str) -> dict[str, Any]:

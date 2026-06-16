@@ -111,8 +111,26 @@ remains the canonical pipeline; the GUI is an alternative driver over the same
 - [x] Reuse `~/research-output/` state so CLI ⇄ GUI sessions interoperate (Collect/Analyze write last_session.json + sessions.jsonl)
 - [x] Keep GUI behavior-identical to the CLI (every action maps to an `nlm` command — no GUI-only capabilities)
 - [~] Docs: GUI README ✓; cross-link from `architecture.md` ✓ / `user-flow.md` ✓ / `CLAUDE.md` **pending**
-- [ ] Wire remaining stages: Media, Organize, Share (→ their `nlm` commands)
+- [x] Wire remaining stages: Media, Organize, Share (→ their `nlm` commands)
 - [x] Fix latent Windows cp1252 crash in `youtube_search.py` itself — `sys.stdout/stderr.reconfigure(encoding="utf-8")` at startup (both skills + commands copies). Verified via piped output. GUI's child UTF-8 env now belt-and-suspenders.
+
+---
+
+## Epic 7 — GUI redesign: workspace SPA (P2)
+
+Rebuild the flat top-stepper frontend into a **workspace SPA** (ADR-0014): sidebar
+of notebooks + per-notebook tabbed workspace + guided "New research". Preact + htm
++ hooks via pinned CDN (no build step); light/dark theme. Backend keeps every
+existing endpoint and gains thin read endpoints. See `user-flow.md` §8.
+
+- [x] Backend read sub-resources: `GET /api/notebook/{id}/{sources,artifacts,labels,share}` + `POST .../sources` (reuse `list_sources`/`studio_status`/label/share/`add_sources`). Live-validated on the 5-source sample.
+- [x] Frontend rewrite to Preact+htm ES modules (`gui/frontend/src/{app,api,store}.js`, `components/*`, `views/*`); removed old flat `app.js`/`style.css`. All 15 modules pass `node --check`.
+- [x] Workspace IA: Topbar (theme toggle + auth pill) · Sidebar (notebooks + New) · Workspace tabs Sources/Artifacts/Labels/Share (lazy-loaded).
+- [x] Guided "New research" → streams `/api/jobs/run` and routes to the new notebook workspace.
+- [x] Light/dark theme via CSS tokens + topbar toggle; system default, persisted in `localStorage`.
+- [x] Reused runJob/progress-log/retry/auth-state logic ported from the old `app.js`.
+- [x] Verified: static modules serve as `text/javascript`; esm.sh reachable; all 4 read endpoints return data.
+- [ ] Polish follow-ups: source thumbnails/links, artifact download links/preview, drag-to-label, a Dashboard/home overview, optional vendored Preact (offline).
 
 ---
 

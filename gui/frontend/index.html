@@ -3,27 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Research GUI</title>
-  <link rel="stylesheet" href="/style.css" />
+  <title>Research</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script>
+    // Set theme before first paint to avoid a flash.
+    (function () {
+      var t = localStorage.getItem("theme");
+      if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">/research</div>
-    <nav id="nav" class="stepper"></nav>
-    <div class="auth">
-      <span id="auth-pill" class="pill pill-unknown" title="auth status">checking…</span>
-    </div>
-  </header>
-
-  <main id="view" class="view">
-    <!-- active page renders here -->
-  </main>
-
-  <footer class="footer">
-    Local web app · drives <code>nlm</code> + <code>youtube_search.py</code> ·
-    state in <code>~/research-output/</code> · see <code>architecture.md</code> (ADR-0012/0013)
-  </footer>
-
-  <script src="/app.js"></script>
+  <div id="app"></div>
+  <script type="module" src="/src/app.js"></script>
 </body>
 </html>

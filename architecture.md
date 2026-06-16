@@ -42,15 +42,15 @@ Both converge on the same integration layer and the same `~/research-output/` st
 ## 2. Component model
 
 ```
-FRONT-END A: Claude Code (CLI)        FRONT-END B: Local web GUI (planned)
+FRONT-END A: Claude Code (CLI)        FRONT-END B: Local web GUI (Preact SPA)
 ┌───────────────────────────────┐     ┌───────────────────────────────────┐
-│  SKILL.md ── router/auth gate  │     │  Browser UI (localhost)            │
-│   ┌────────┬────────┬────────┐ │     │   pages: Search · Collect ·        │
-│   │ search │collect │analyze │ │     │   Analyze · Media · Organize ·     │
-│   ├────────┼────────┼────────┤ │     │   Share · Dashboard                │
-│   │ export │ status │ drive  │ │     │            │ HTTP/JSON              │
+│  SKILL.md ── router/auth gate  │     │  Browser SPA (localhost)           │
+│   ┌────────┬────────┬────────┐ │     │   sidebar: notebooks · + New       │
+│   │ search │collect │analyze │ │     │   workspace tabs: Sources ·        │
+│   ├────────┼────────┼────────┤ │     │   Artifacts · Labels · Share       │
+│   │ export │ status │ drive  │ │     │            │ HTTP/JSON + SSE        │
 │   ├────────┴────────┴────────┤ │     │            ▼                       │
-│   │ run (orchestrates inline) │ │     │  Local backend (FastAPI/Express)   │
+│   │ run (orchestrates inline) │ │     │  Local backend (FastAPI)           │
 │   ├────────┬────────┬────────┤ │     │   - shells out to nlm + script     │
 │   │ media  │organize│ share  │ │     │   - reads/writes research-output/  │
 │   └────────┴────────┴────────┘ │     └───────────────────────────────────┘
@@ -245,6 +245,17 @@ Format: each record has **Status**, **Context**, **Decision**, **Consequences**.
 
 ---
 
+### ADR-0014 — Preact + htm (no build) for the GUI frontend; workspace IA
+**Status:** Accepted (supersedes the flat single-file stepper)
+
+**Context.** The first GUI frontend was a single ~600-line `app.js` that hand-built DOM via an `el()` helper behind a flat top-stepper (one tab per stage). It worked but had no real information architecture — no way to see a notebook's sources/artifacts/labels/share together — and didn't scale as a "full application." A redesign was wanted, but ADR-0013's "no build step / no npm" constraint still applies.
+
+**Decision.** Rebuild the frontend as a **workspace SPA**: a left **sidebar of notebooks**, a per-notebook **workspace with tabs** (Sources / Artifacts / Labels / Share), and a **"+ New research"** guided run. Implement it with **Preact + `htm` + hooks** imported as ES modules from a pinned CDN (esm.sh) — real components and state with **no build toolchain**. State lives in a tiny observable store (a listener `Set` + a `useStore` hook) rather than `@preact/signals`, to avoid a second Preact instance over the CDN. Theme is **light/dark** via CSS design tokens (`[data-theme]`) with a topbar toggle, defaulting to `prefers-color-scheme` and persisted in `localStorage`. The backend gains thin read endpoints (`GET /api/notebook/{id}/{sources,artifacts,labels,share}`) that reuse existing runner functions; all generate/label/share actions reuse the existing job + SSE machinery.
+
+**Consequences.** (+) Proper IA — manage a notebook's whole lifecycle in one place; components are maintainable and testable per file. (+) Still zero build/npm; faithful to ADR-0013. (+) Backend additions are thin wrappers, no logic moved out of `app.py`. (−) The browser fetches Preact/htm from a CDN at runtime (acceptable — the app already needs internet for `nlm`/YouTube; a vendored copy is a noted follow-up). (−) More frontend files than the single `app.js` (the point — separation of concerns).
+
+---
+
 ## 5. Decision index
 
 | ADR | Title | Status |
@@ -262,6 +273,7 @@ Format: each record has **Status**, **Context**, **Decision**, **Consequences**.
 | 0011 | nlm ≥ 0.7.2 version floor | Accepted |
 | 0012 | Local web GUI as a second front-end | Proposed |
 | 0013 | GUI backend drives the `nlm` CLI directly | Proposed |
+| 0014 | Preact+htm (no-build) GUI frontend; workspace IA | Accepted |
 
 ---
 

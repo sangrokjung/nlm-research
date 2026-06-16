@@ -1,0 +1,44 @@
+import { html, useState, useEffect } from "../preact.js";
+import { api, apiJSON } from "../api.js";
+
+export function SourcesTab({ id }) {
+  const [sources, setSources] = useState(null);
+  const [adding, setAdding] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function load() {
+    const { ok, body } = await api("/api/notebook/" + id + "/sources");
+    setSources(ok ? (body.sources || []) : []);
+  }
+  useEffect(() => { setSources(null); load(); }, [id]);
+
+  async function add() {
+    const urls = adding.split(/\s+/).filter(Boolean);
+    if (!urls.length) return;
+    setBusy(true); setErr("");
+    const { ok, body } = await apiJSON("/api/notebook/" + id + "/sources", "POST", { urls });
+    if (!ok) setErr(body.error || body.detail || "add failed");
+    setAdding(""); setBusy(false); load();
+  }
+
+  if (sources === null) return html`<div class="spinner">Loading sources…</div>`;
+  return html`
+    <div>
+      <div class="row addbar">
+        <input class="input" placeholder="Add URL / YouTube link(s), space-separated…"
+               value=${adding} onInput=${(e) => setAdding(e.target.value)}
+               onKeyDown=${(e) => { if (e.key === "Enter") add(); }} />
+        <button class="btn primary" disabled=${busy} onClick=${add}>${busy ? "Adding…" : "+ Add"}</button>
+      </div>
+      ${err ? html`<div class="banner err">${err}</div>` : ""}
+      ${sources.length
+        ? html`<ul class="list">${sources.map((sc) => html`
+            <li class="list-item">
+              <span>📄</span>
+              <div class="grow">${sc.title || sc.name || sc.id || "(source)"}</div>
+              <span class="muted">${sc.type || ""}</span>
+            </li>`)}</ul>`
+        : html`<div class="muted pad">No sources yet.</div>`}
+    </div>`;
+}

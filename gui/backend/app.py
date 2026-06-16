@@ -27,11 +27,13 @@ from .nlm_runner import (
     download_report,
     find_artifact_id,
     list_notebooks,
+    list_sources,
     nlm,
     nlm_json,
     notebook_summary,
     query_notebook,
     search_youtube,
+    studio_status,
     wait_for_artifact,
 )
 
@@ -411,6 +413,44 @@ def stream_job(jid: str) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# --- Notebook workspace read/sub-resources (lazy per tab) -------------------
+
+class AddSourceRequest(BaseModel):
+    urls: list[str]
+    wait: bool = True
+
+
+@app.get("/api/notebook/{nb}/sources")
+def nb_sources(nb: str) -> dict:
+    return {"sources": list_sources(nb)}
+
+
+@app.get("/api/notebook/{nb}/artifacts")
+def nb_artifacts(nb: str) -> dict:
+    return {"artifacts": studio_status(nb)}
+
+
+@app.get("/api/notebook/{nb}/labels")
+def nb_labels(nb: str) -> dict:
+    data = nlm_json("label", "list", nb, "--json", timeout=120)
+    labels = data.get("labels", data) if isinstance(data, dict) else data
+    return {"labels": labels}
+
+
+@app.get("/api/notebook/{nb}/share")
+def nb_share(nb: str) -> dict:
+    res = nlm("share", "status", nb)
+    return {"ok": res["ok"], "detail": res["stdout"] or res["stderr"]}
+
+
+@app.post("/api/notebook/{nb}/sources")
+def nb_add_sources(nb: str, req: AddSourceRequest) -> dict:
+    if not req.urls:
+        raise HTTPException(status_code=400, detail="no urls provided")
+    add = add_sources(nb, req.urls, wait=req.wait)
+    return {"ok": add["ok"], "detail": add["stdout"] or add["stderr"], "sources": list_sources(nb)}
 
 
 @app.post("/api/organize")
