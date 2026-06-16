@@ -7,10 +7,15 @@ so the UI shape is complete and the wiring is obvious for the next iteration.
 """
 from __future__ import annotations
 
+import os
+import shutil
+import tempfile
+
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.background import BackgroundTask
 
 from . import config, jobs, sessions
 
@@ -104,6 +109,20 @@ _MEDIA = {
     "mindmap": ("mind_map", "mind-map", "json"),
     "infographic": ("infographic", "infographic", "png"),
     "datatable": ("data_table", "data-table", "csv"),
+}
+
+# studio artifact type -> (nlm download subcommand, file extension) for browser download
+_DOWNLOAD = {
+    "report": ("report", "md"),
+    "video": ("video", "mp4"),
+    "audio": ("audio", "mp3"),
+    "flashcards": ("flashcards", "json"),
+    "mind_map": ("mind-map", "json"),
+    "infographic": ("infographic", "png"),
+    "data_table": ("data-table", "csv"),
+    "quiz": ("quiz", "json"),
+    "slide_deck": ("slide-deck", "pptx"),
+    "slides": ("slide-deck", "pptx"),
 }
 
 
@@ -451,6 +470,26 @@ def nb_add_sources(nb: str, req: AddSourceRequest) -> dict:
         raise HTTPException(status_code=400, detail="no urls provided")
     add = add_sources(nb, req.urls, wait=req.wait)
     return {"ok": add["ok"], "detail": add["stdout"] or add["stderr"], "sources": list_sources(nb)}
+
+
+@app.get("/api/notebook/{nb}/download/{artifact_type}")
+def nb_download(nb: str, artifact_type: str) -> FileResponse:
+    """Download an artifact: run `nlm download` to a temp file and stream it back."""
+    spec = _DOWNLOAD.get(artifact_type)
+    if not spec:
+        raise HTTPException(status_code=400, detail=f"no download for type: {artifact_type}")
+    kind, ext = spec
+    tmpdir = tempfile.mkdtemp(prefix="nlmdl_")
+    out = os.path.join(tmpdir, f"{artifact_type}.{ext}")
+    dl = download(kind, nb, out)
+    if not dl["ok"] or not os.path.exists(out):
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise HTTPException(status_code=502, detail=dl["stderr"] or dl["stdout"] or "download failed")
+    return FileResponse(
+        out,
+        filename=f"{nb[:8]}_{artifact_type}.{ext}",
+        background=BackgroundTask(shutil.rmtree, tmpdir, True),
+    )
 
 
 @app.post("/api/organize")

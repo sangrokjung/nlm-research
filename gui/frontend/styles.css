@@ -113,8 +113,10 @@ select { background: var(--panel-2); border: 1px solid var(--line); color: var(-
 .list-item { display: flex; gap: 12px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
 .list-item .grow { flex: 1; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-.art { flex-direction: row; align-items: center; justify-content: space-between; margin: 0; }
-.art-type { font-weight: 600; text-transform: capitalize; }
+.art { margin: 0; padding: 12px; gap: 0; }
+.art-row { display: flex; align-items: center; gap: 10px; }
+.art-type { font-weight: 600; text-transform: capitalize; flex: 1; }
+.art-err { color: var(--bad); font-size: 12px; margin-top: 8px; word-break: break-word; }
 .badge { padding: 3px 9px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); }
 .badge.ok { color: var(--ok); border-color: var(--ok); }
 .badge.warn { color: var(--warn); border-color: var(--warn); }

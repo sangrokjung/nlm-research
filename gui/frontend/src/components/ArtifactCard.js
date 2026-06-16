@@ -6,14 +6,18 @@ const MEDIA_OF = {
   video: "video", flashcards: "flashcards", mind_map: "mindmap",
   infographic: "infographic", data_table: "datatable",
 };
+// types we can stream back to the browser
+const DOWNLOADABLE = new Set(["report", "video", "audio", "flashcards", "mind_map", "infographic", "data_table", "quiz", "slide_deck", "slides"]);
 
 export function ArtifactCard({ a, id, onChange }) {
   const [status, setStatus] = useState(a.status || "?");
   const [busy, setBusy] = useState(false);
+  const [dlBusy, setDlBusy] = useState(false);
+  const [err, setErr] = useState("");
   const type = a.type || "artifact";
 
   async function retry() {
-    setBusy(true);
+    setBusy(true); setErr("");
     try {
       let m;
       if (type === "report") m = await runJob("analyze", { notebook_id: id, topic: "research", question: "", download: true });
@@ -21,16 +25,45 @@ export function ArtifactCard({ a, id, onChange }) {
       setStatus(m.artifact_status || (m.report_ok || m.create_ok ? "completed" : "failed"));
       onChange && onChange();
     } catch (e) {
-      setStatus("failed");
+      setStatus("failed"); setErr(e.message);
     }
     setBusy(false);
+  }
+
+  async function download() {
+    setDlBusy(true); setErr("");
+    try {
+      const res = await fetch("/api/notebook/" + id + "/download/" + type);
+      if (!res.ok) {
+        let b = {}; try { b = await res.json(); } catch {}
+        throw new Error(b.detail || b.error || ("download failed (HTTP " + res.status + ")"));
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get("Content-Disposition") || "";
+      const m = /filename="?([^"]+)"?/.exec(cd);
+      const name = m ? m[1] : type + ".bin";
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url; link.download = name;
+      document.body.appendChild(link); link.click(); link.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setErr(e.message);
+    }
+    setDlBusy(false);
   }
 
   const ok = status === "completed";
   return html`
     <div class="card art">
-      <div class="art-type">${type}</div>
-      <span class="badge ${ok ? "ok" : "warn"}">${busy ? "working…" : status}</span>
-      ${!ok ? html`<button class="btn sm" disabled=${busy} onClick=${retry}>Retry</button>` : ""}
+      <div class="art-row">
+        <div class="art-type">${type}</div>
+        <span class="badge ${ok ? "ok" : "warn"}">${busy ? "working…" : status}</span>
+        ${ok && DOWNLOADABLE.has(type)
+          ? html`<button class="btn sm" disabled=${dlBusy} onClick=${download}>${dlBusy ? "…" : "Download"}</button>`
+          : ""}
+        ${!ok ? html`<button class="btn sm" disabled=${busy} onClick=${retry}>Retry</button>` : ""}
+      </div>
+      ${err ? html`<div class="art-err">${err}</div>` : ""}
     </div>`;
 }
