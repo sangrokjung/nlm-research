@@ -69,10 +69,11 @@ gui/
         └── views/         # NewResearch · Workspace · {Sources,Artifacts,Labels,Share}Tab
 ```
 
-**Stack:** Preact + `htm` + hooks, imported as ES modules from a pinned CDN
-(esm.sh) — components and state with **no build step / no npm**, consistent with
-ADR-0013. (Browser fetches the CDN at runtime; the app already needs internet for
-`nlm`/YouTube.)
+**Stack:** Preact + `htm` + hooks — components and state with **no build step / no
+npm**, consistent with ADR-0013. The framework is **vendored locally** under
+`gui/frontend/vendor/` (pinned `preact@10.19.3` / `htm@3.1.1`) and wired via an
+**import map** in `index.html`, so the GUI runs **fully offline** — no runtime CDN.
+To update versions, re-download the `*.module.js` files from unpkg.
 
 ## Endpoints (current)
 

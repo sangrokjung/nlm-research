@@ -13,6 +13,16 @@
       document.documentElement.dataset.theme = t;
     })();
   </script>
+  <!-- Vendored locally (no runtime CDN); single Preact instance via this map. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "preact": "/vendor/preact.module.js",
+        "preact/hooks": "/vendor/hooks.module.js",
+        "htm": "/vendor/htm.module.js"
+      }
+    }
+  </script>
 </head>
 <body>
   <div id="app"></div>

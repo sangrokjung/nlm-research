@@ -1,9 +1,10 @@
-// Single pinned Preact + htm instance shared by every module (no build step).
-// Using hooks (not signals) keeps everything on one Preact instance via esm.sh.
-export { h, render, Fragment } from "https://esm.sh/preact@10.19.3";
-export { useState, useEffect, useRef, useMemo, useCallback } from "https://esm.sh/preact@10.19.3/hooks";
+// Single Preact + htm instance shared by every module (no build step).
+// Bare specifiers resolve via the import map in index.html to /vendor/*.module.js
+// (vendored locally — no runtime CDN). Using hooks (not signals) keeps one instance.
+export { h, render, Fragment } from "preact";
+export { useState, useEffect, useRef, useMemo, useCallback } from "preact/hooks";
 
-import { h } from "https://esm.sh/preact@10.19.3";
-import htm from "https://esm.sh/htm@3.1.1";
+import { h } from "preact";
+import htm from "htm";
 
 export const html = htm.bind(h);
