@@ -55,8 +55,9 @@ Execute MCP calls directly for each step. Confirmation prompts happen exactly tw
 ██░░░░░░░░░░░░░░░░░░ 10% [Step 1/4] Search
 ```
 
-1. Run `python3 ~/.claude/commands/research/scripts/youtube_search.py "<topic>" -n <top> --json > ~/research-output/last_search.json`
+1. Run `python3 ~/.claude/commands/research/scripts/youtube_search.py "<topic>" -n <top> --json --save-urls ~/research-output/<topic>/source_urls.json > ~/research-output/last_search.json`
    - For the `trend-report` preset, add `-d` (newest-first) by default to capture trend movement over time.
+   - `<topic>` in the path is the topic with spaces replaced by hyphens (same folder the export step uses). `--save-urls` writes a `{normalized title → watch URL}` sidecar (merge-only) so source links resolve to the real videos in the GUI Sources tab.
 2. Parse the JSON and render a numbered list:
    ```
    ## YouTube search results: "<topic>"
@@ -155,7 +156,7 @@ Run the entire pipeline sequentially without any confirmation. Apply the preset 
 
 ### Auto sequence
 
-1. **Search**: run `python3 ~/.claude/commands/research/scripts/youtube_search.py "<topic>" -n <top> --json` → extract the top `top` URLs
+1. **Search**: run `python3 ~/.claude/commands/research/scripts/youtube_search.py "<topic>" -n <top> --json --save-urls ~/research-output/<topic>/source_urls.json` → extract the top `top` URLs (the `--save-urls` sidecar — topic spaces→hyphens — lets the GUI Sources tab link to the real videos)
 2. **Auth refresh**: call `mcp__notebooklm-mcp__refresh_auth()`
 3. **Collect**:
    - `mcp__notebooklm-mcp__notebook_create(title="Research: <topic> - <date>")`

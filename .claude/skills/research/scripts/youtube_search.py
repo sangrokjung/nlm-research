@@ -189,6 +189,39 @@ def format_duration(seconds) -> str:
     return f"{minutes}:{secs:02d}"
 
 
+def _norm_title(title: str) -> str:
+    """Normalize a title for sidecar keys (must match the GUI backend:
+    lowercase, trim, collapse whitespace)."""
+    return re.sub(r"\s+", " ", (title or "").strip().lower())
+
+
+def write_url_sidecar(path: str, results: list[dict]) -> None:
+    """Merge {normalized title -> watch URL} into a source_urls.json sidecar.
+
+    Merge-only (never clobbers other entries); creates parent dirs as needed.
+    Same shape/path the GUI reads, so CLI-collected notebooks get real links too.
+    """
+    mapping = {_norm_title(r["title"]): r["url"]
+               for r in results if r.get("title") and r.get("url")}
+    if not mapping:
+        return
+    existing = {}
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                existing = json.load(f)
+            if not isinstance(existing, dict):
+                existing = {}
+        except (json.JSONDecodeError, OSError):
+            existing = {}
+    existing.update(mapping)
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(existing, f, indent=2, ensure_ascii=False)
+
+
 def main():
     parser = argparse.ArgumentParser(description="YouTube search + subtitle extraction (yt-dlp powered)")
 
@@ -197,6 +230,7 @@ def main():
     parser.add_argument("-d", "--date", action="store_true", help="Sort by newest first")
     parser.add_argument("--json", action="store_true", help="JSON output")
     parser.add_argument("--urls-only", action="store_true", help="Print only the URLs (useful for pasting into NotebookLM)")
+    parser.add_argument("--save-urls", metavar="PATH", help="Also write a {normalized title -> watch URL} sidecar JSON to PATH (merge-only). Lets /research recover real source links the GUI can serve.")
 
     # Subtitle extraction
     parser.add_argument("--subtitle", action="store_true", help="Subtitle extraction mode")
@@ -241,6 +275,9 @@ def main():
 
     if not results:
         sys.exit(0)
+
+    if args.save_urls:
+        write_url_sidecar(args.save_urls, results)
 
     if args.json:
         print(json.dumps(results, ensure_ascii=False, indent=2))
