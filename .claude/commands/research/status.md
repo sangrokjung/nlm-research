@@ -39,6 +39,9 @@ Read `~/research-output/research_sessions.jsonl`.
   | learning | Learning guide | report + audio |
   | deep-dive | Deep analysis (web research included) | report |
   | presentation | Presentation deck | report + slides |
+  | study-pack | Study kit | report + podcast + flashcards + mind map + quiz |
+  | explainer | Explainer video | report + video |
+  | visual-report | Visual summary | report + infographic + mind map + data table |
   ```
   Then exit.
 
@@ -50,7 +53,7 @@ Check for a notebook-id in the text after `status` in `$ARGUMENTS`.
 
 ### Step 2.5: System info
 
-Call `mcp__notebooklm-mcp__server_info()` to display the MCP server version:
+Call `mcp__notebooklm-mcp__server_info()` to display the MCP server version (and confirm `nlm` ≥ 0.7.2; suggest `nlm doctor` if anything looks off):
 ```
 NLM MCP server: v<version>
 ```
@@ -62,7 +65,11 @@ For detailed notebook queries, also call `mcp__notebooklm-mcp__notebook_describe
 For each target notebook, run:
 
 1. `mcp__notebooklm-mcp__notebook_get(notebook_id=...)` — notebook details (source count, etc.)
-2. `mcp__notebooklm-mcp__studio_status(notebook_id=...)` — artifact state (if any)
+2. `mcp__notebooklm-mcp__studio_status(notebook_id=...)` — artifact state (report/audio/video/flashcards/mind_map/infographic/data_table/quiz/slides)
+
+In the **detail view**, also surface:
+3. `mcp__notebooklm-mcp__label(notebook_id, action="list")` (or `nlm label list <id>`) — source labels + counts
+4. `mcp__notebooklm-mcp__notebook_share_status(notebook_id)` (or `nlm share status <id>`) — sharing access + collaborators
 
 Run in parallel for multiple notebooks.
 
@@ -93,8 +100,10 @@ Detailed view (when a notebook-id is provided):
 - **Status**: <status> (collecting/analyzing/exported)
 - **Preset**: <preset>
 - **Sources**: <N>
+- **Labels**: <emoji name (count), ...  — or "none">
 - **Artifacts**: <artifacts array detail>
 - **Artifact status**: <status detail>
+- **Sharing**: <access (Restricted / Anyone with link) + collaborators>
 - **Collected URLs**:
   1. <url1>
   2. <url2>
@@ -105,6 +114,8 @@ Detailed view (when a notebook-id is provided):
 Suggest the next step based on the current status:
 - Sources only, not yet analyzed: "Run `/research analyze <notebook-id>`."
 - Analysis complete: "Run `/research export <notebook-id>` to export the results."
+- No labels yet (5+ sources): "Run `/research organize <notebook-id>` to label sources."
+- Report ready, not shared: "Run `/research share <notebook-id> docs` to export, or `public` to share."
 
 ## --clean option
 

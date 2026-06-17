@@ -351,3 +351,56 @@ mcp__notebooklm-mcp__studio_status(notebook_id=<id>)
 mcp__notebooklm-mcp__download_artifact(notebook_id=<id>, artifact_type="report", output_path="~/research-output/presentation_report.md")
 mcp__notebooklm-mcp__download_artifact(notebook_id=<id>, artifact_type="slides", output_path="~/research-output/presentation_slides.pptx", slide_deck_format="pptx")
 ```
+
+---
+
+## Scenario 7: Video Overview (explainer)
+
+```bash
+/research media <notebook-id> --type video --format explainer
+```
+```
+mcp__notebooklm-mcp__studio_create(notebook_id=<id>, artifact_type="video", video_format="explainer", visual_style="auto_select", confirm=true)
+→ poll studio_status (allow up to 10 min)
+→ download_artifact(notebook_id=<id>, artifact_type="video", output_path="~/research-output/<topic>/<topic>_video.mp4")
+```
+Cinematic: `--type video --format cinematic --focus "documentary tone, data-driven, for execs"`.
+
+## Scenario 8: Study pack (one run)
+
+```bash
+/research run <topic> --preset study-pack --auto
+# → report + podcast + flashcards + mind map + quiz
+```
+```
+chat_configure(goal="learning_guide")
+→ notebook_query("Organize the core concepts in a learning order.")
+→ studio_create(report) + studio_create(audio) + studio_create(flashcards) + studio_create(mind_map) + studio_create(quiz, question_count=5)
+→ poll studio_status → download each (mind_map download may fail on v0.7.2)
+```
+
+## Scenario 9: Organize sources by label
+
+```bash
+/research organize <notebook-id> auto      # AI-group sources (needs 5+)
+/research organize <notebook-id> list      # review
+/research organize <notebook-id> move <source-id> <label-id>   # re-assign (additive)
+```
+```
+label(notebook_id=<id>, action="auto")   # → { labels: [{name, emoji, source_ids}, ...] }
+```
+
+## Scenario 10: Share & export
+
+```bash
+/research share <notebook-id> status                 # current access + collaborators
+/research share <notebook-id> public                 # ⚠ confirm → public link
+/research share <notebook-id> invite a@b.com --role viewer
+/research share <notebook-id> docs                   # report → Google Docs
+/research share <notebook-id> sheets                 # data table → Google Sheets
+```
+```
+studio_status(notebook_id=<id>)  → find the completed report / data_table artifact id
+→ export_artifact(notebook_id=<id>, artifact_id=<id>, export_type="docs", title="...")   # → Google Doc URL
+```
+Exported Docs/Sheets are owner-private until shared in Google Drive.

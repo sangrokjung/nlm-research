@@ -123,13 +123,39 @@ mcp__notebooklm-mcp__export_artifact(
 
 After the export, show the resulting Google Docs/Sheets URL.
 
+**All artifact types** (MCP `download_artifact(artifact_type=...)` or `nlm download <kind>`):
+
+| Artifact | `artifact_type` | `nlm download` kind | File |
+|----------|-----------------|---------------------|------|
+| Report | `report` | `report` | `.md` |
+| Podcast | `audio` | `audio` | `.mp3` |
+| Slides | `slides` | `slide-deck` | `.pptx` |
+| Quiz | `quiz` | `quiz` | `.json` |
+| Video Overview | `video` | `video` | `.mp4` |
+| Flashcards | `flashcards` | `flashcards` | `.json` |
+| Mind map | `mind_map` | `mind-map` | `.json` |
+| Infographic | `infographic` | `infographic` | `.png` |
+| Data table | `data_table` | `data-table` | `.csv` |
+
 **Secondary: CLI fallback (when MCP fails)**
 ```bash
-nlm download report <notebook-id> --output ~/research-output/<topic>/<topic>_report.md
-nlm download audio <notebook-id> --output ~/research-output/<topic>/<topic>_podcast.mp3
-nlm download slide-deck <notebook-id> --output ~/research-output/<topic>/<topic>_slides.pptx --format pptx
-nlm download quiz <notebook-id> --output ~/research-output/<topic>/<topic>_quiz.json --format json
+nlm download report      <notebook-id> -o ~/research-output/<topic>/<topic>_report.md
+nlm download audio       <notebook-id> -o ~/research-output/<topic>/<topic>_podcast.mp3
+nlm download slide-deck  <notebook-id> -o ~/research-output/<topic>/<topic>_slides.pptx
+nlm download quiz        <notebook-id> -o ~/research-output/<topic>/<topic>_quiz.json
+nlm download video       <notebook-id> -o ~/research-output/<topic>/<topic>_video.mp4
+nlm download flashcards  <notebook-id> -o ~/research-output/<topic>/<topic>_flashcards.json
+nlm download infographic <notebook-id> -o ~/research-output/<topic>/<topic>_infographic.png
+nlm download data-table  <notebook-id> -o ~/research-output/<topic>/<topic>_datatable.csv
+# nlm download mind-map fails on nlm v0.7.2 (known bug) — the mind map still generates in NotebookLM
 ```
+
+**Top-level `nlm export` CLI** (alternative to MCP `export_artifact` for Docs/Sheets):
+```bash
+nlm export to-docs   <notebook-id> <report-artifact-id>     --title "<topic> report"
+nlm export to-sheets <notebook-id> <data-table-artifact-id> --title "<topic> data"
+```
+For richer sharing (public link / invite), use `/research share <notebook-id>` (see `share.md`).
 
 ### Step 6: Save the Q&A as a Markdown file
 

@@ -68,6 +68,7 @@ Once the source list is finalized, detect the type of each item:
    ```
    mcp__notebooklm-mcp__source_add(notebook_id=..., source_type="file", file_path="<path>")
    ```
+   **18 supported file types** (nlm v0.7.2): PDF, TXT, MD, DOCX, CSV, EPUB, MP3, M4A, WAV, AAC, OGG, OPUS, MP4, JPG, JPEG, PNG, GIF, WEBP. (Image/video sources also feed Studio's visual-crop pipeline for on-screen aids in Video Overviews.)
 
 4. Report success/failure of each add to the user.
 
@@ -132,6 +133,12 @@ Get the current timestamp with `date '+%Y-%m-%dT%H:%M:%S'`, then append the line
 
 **Failed-only record**: if every URL failed, still append a record with empty `urls` for debugging.
 
+### Step 6.5: Offer to auto-label (optional)
+
+If the notebook now has **5+ sources**, offer: "Auto-label these sources into themes? (yes/no)"
+- yes → run `mcp__notebooklm-mcp__label(notebook_id, action="auto")` (or `nlm label auto <id>`), then show the labels. See `organize.md`.
+- no → continue.
+
 ### Step 7: Next-step hint
 
 After collection completes:
@@ -144,7 +151,7 @@ Source collection complete.
 | Topic | <topic> |
 | Sources | <N> |
 
-Next: run `/research analyze <notebook-id>`.
+Next: run `/research analyze <notebook-id>` — or `/research organize <id>` to label sources, `/research media <id> --type ...` for rich artifacts.
 ```
 
 ## Notes

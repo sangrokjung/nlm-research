@@ -17,6 +17,7 @@
 | `--notebook <id>` | (create new) | Add to an existing notebook |
 | `--lang <code>` | en | Artifact language (BCP-47: en, ko, ja, ...) |
 | `--drive <url-or-id>` | (none) | Collect a Google Drive file alongside the YouTube sources |
+| `--organize` | false | After collect, auto-label the sources (`/research organize <id> auto`) |
 
 ## Parsing
 
@@ -29,6 +30,7 @@ Parse the text after `run` in `$ARGUMENTS`.
 5. The remainder is the `<topic>` (search keyword)
 6. Extract `--lang <code>` → default `en`
 7. Extract `--drive <url-or-id>` → if absent, no Drive source is collected
+8. Check for `--organize` → if set, auto-label sources after collect
 
 If the topic is empty, error: "Please provide a topic. Example: `/research run AI agent trends`."
 
@@ -42,8 +44,11 @@ If the topic is empty, error: "Please provide a topic. Example: `/research run A
 | `learning` | 3 | goal="learning_guide" | report + audio + quiz | report.md + podcast.mp3 + quiz.json |
 | `deep-dive` | 10 | goal="custom", custom_prompt="Act as a deep-dive research analyst and analyze the topic exhaustively from every angle." + research_start | report | report.md |
 | `presentation` | 5 | goal="custom", custom_prompt="Act as a presentation expert and structure the key points into a slide outline." | report + slides | report.md + slides.pptx |
+| `study-pack` | 5 | goal="learning_guide" | report + audio + flashcards + mind_map + quiz | report.md + podcast.mp3 + flashcards.json + mindmap.json + quiz.json |
+| `explainer` | 5 | goal="custom", custom_prompt="Act as a research analyst and extract the key insights." | report + video (explainer) | report.md + video.mp4 |
+| `visual-report` | 5 | goal="custom", custom_prompt="Act as a research analyst and extract the key insights." | report + infographic + mind_map + data_table | report.md + infographic.png + mindmap.json + datatable.csv |
 
-Invalid preset error: "Invalid preset. Allowed: default, trend-report, competitor, learning, deep-dive, presentation"
+Invalid preset error: "Invalid preset. Allowed: default, trend-report, competitor, learning, deep-dive, presentation, study-pack, explainer, visual-report"
 
 ## Interactive mode (default, no --auto)
 
@@ -233,6 +238,44 @@ chat_configure(goal="custom", custom_prompt="Act as a deep-dive research analyst
 → poll studio_status
 → download_artifact(artifact_type="report")
 ```
+
+**study-pack:**
+```
+chat_configure(goal="learning_guide")
+→ notebook_query("Organize the core concepts of this topic in a learning order.")
+→ studio_create(artifact_type="report", confirm=true)
+→ studio_create(artifact_type="audio", confirm=true)
+→ studio_create(artifact_type="flashcards", difficulty="medium", confirm=true)
+→ studio_create(artifact_type="mind_map", confirm=true)
+→ studio_create(artifact_type="quiz", question_count=5, confirm=true)
+→ poll studio_status (report + audio + flashcards + mind_map + quiz)
+→ download_artifact for each (mind_map download may fail on nlm v0.7.2 — keep going)
+```
+
+**explainer:**
+```
+chat_configure(goal="custom", custom_prompt="Act as a research analyst and extract the key insights.")
+→ notebook_query("Summarize the top 5 key insights in a structured format.")
+→ studio_create(artifact_type="report", confirm=true)
+→ studio_create(artifact_type="video", video_format="explainer", visual_style="auto_select", confirm=true)
+→ poll studio_status (report + video; allow up to 10 min for video)
+→ download_artifact(artifact_type="report")
+→ download_artifact(artifact_type="video")
+```
+
+**visual-report:**
+```
+chat_configure(goal="custom", custom_prompt="Act as a research analyst and extract the key insights.")
+→ notebook_query("Summarize the top 5 key insights in a structured format.")
+→ studio_create(artifact_type="report", confirm=true)
+→ studio_create(artifact_type="infographic", orientation="landscape", detail_level="standard", confirm=true)
+→ studio_create(artifact_type="mind_map", confirm=true)
+→ studio_create(artifact_type="data_table", description="key facts and comparisons from the sources", confirm=true)
+→ poll studio_status
+→ download_artifact for report / infographic / data_table (mind_map download may fail on nlm v0.7.2)
+```
+
+> **Optional `--organize`**: after collect (and before/after analyze), run `label(notebook_id, action="auto")` to AI-group the sources, then continue. Needs 5+ sources.
 
 ## Error handling (3-tier)
 

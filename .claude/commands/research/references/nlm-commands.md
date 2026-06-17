@@ -450,3 +450,56 @@ nlm research status <notebook-id> --task-id <id> --max-wait 0
 nlm config list
 nlm login switch <profile>
 ```
+
+---
+
+## 10. Source labels (v0.7.2)
+
+Organize a notebook's sources into themed labels — MCP `label` tool, `nlm label` CLI.
+
+```
+label(notebook_id, action="auto")          # nlm label auto <nb> --json   (needs 5+ sources)
+label(notebook_id, action="list")          # nlm label list <nb> --json
+label(action="reorganize")                 # nlm label reorganize <nb>
+label(action="create", name=...)           # nlm label create <nb> <name>
+label(action="rename", ...)                # nlm label rename <nb> <old> <new>
+label(action="set_emoji", ...)             # nlm label emoji <nb> <label> <emoji>
+label(action="move_source", source_id, label_id)  # nlm label move <nb> <source-id> <label-id>  (additive)
+label(action="delete", ...)                # nlm label delete <nb> <label>   (sources kept)
+```
+
+## 11. Sharing & export (v0.7.2)
+
+```
+# Sharing (MCP notebook_share_* / nlm share)
+nlm share status  <nb>
+nlm share public  <nb>           # anyone with link can view (some accounts reject via API → use web UI)
+nlm share private <nb>
+nlm share invite  <nb> <email> --role viewer|editor
+
+# Export an artifact to Google Docs/Sheets (MCP export_artifact / nlm export)
+nlm export to-docs   <nb> <report-artifact-id>     --title "..."
+nlm export to-sheets <nb> <data-table-artifact-id> --title "..."
+```
+Exported Docs/Sheets are **owner-private** until shared in Google Drive.
+
+## 12. Download subcommands (v0.7.2)
+
+`download_artifact(artifact_type=...)` or:
+```
+nlm download report|audio|video|slide-deck|infographic|mind-map|data-table|quiz|flashcards <nb> -o <path>
+```
+- `mind-map` download fails on v0.7.2 (known bug; the artifact still generates).
+
+## 13. Video Overview formats (v0.7.0)
+
+`studio_create(artifact_type="video", video_format="explainer|brief|cinematic", visual_style=..., focus_prompt=...)`.
+For `cinematic`, pass the full creative brief via `focus_prompt` (`--focus` on the CLI).
+
+## 14. Auth states (v0.7.x)
+
+`refresh_auth` / `nlm login --check` distinguish:
+- `stale` — genuine expiry/load failure → prompt the user to run `nlm login`.
+- `unverified` — transient network error → retry before bothering the user.
+
+> Future (not yet wired here): `nlm batch`, `nlm cross` (cross-notebook query), `nlm pipeline`, `nlm tag`.

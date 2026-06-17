@@ -10,9 +10,11 @@ A Claude Code skill that automates a research pipeline: YouTube search → Noteb
 
 ```bash
 claude --version          # Claude Code CLI
-nlm --version             # NotebookLM CLI + MCP: uv tool install notebooklm-mcp-cli  (or  pip install notebooklm-mcp-cli)
+nlm --version             # NotebookLM CLI + MCP (>= 0.7.2): uv tool install notebooklm-mcp-cli  (or  pip install notebooklm-mcp-cli)
 yt-dlp --version          # YouTube search: pip install yt-dlp
 nlm login                 # Authenticate Google account (run once)
+nlm doctor                # Optional: diagnose install/auth issues
+# nlm skill install claude-code   # Optional: install nlm's own expert guide so it stays in sync
 ```
 
 The MCP server (`notebooklm-mcp`) is configured in `.mcp.json` at project scope, so running `claude` inside this repo directory connects it automatically. The first run shows a trust prompt. `.claude/settings.json` also pre-allows the `mcp__notebooklm-mcp__*` permission.
@@ -29,7 +31,7 @@ claude mcp add -s project notebooklm-mcp -- nlm mcp
 /research run <topic> --auto
 
 # Full pipeline with preset
-/research run <topic> --preset <presentation|learning|trend-report|competitor|deep-dive> --auto
+/research run <topic> --preset <presentation|learning|trend-report|competitor|deep-dive|study-pack|explainer|visual-report> --auto
 
 # Step-by-step manual execution
 /research search <keywords>          # Search YouTube (uses yt-dlp)
@@ -37,6 +39,11 @@ claude mcp add -s project notebooklm-mcp -- nlm mcp
 /research analyze <notebook-id>      # Run AI analysis
 /research export <notebook-id>       # Download artifacts to ~/research-output/
 /research status                     # View current session state
+
+# Studio artifacts, source labels, sharing (v0.7.2)
+/research media <notebook-id> --type <video|flashcards|mindmap|infographic|datatable|all>
+/research organize <notebook-id> [auto|list|move <src> <label>|rename <old> <new>|delete <label>]
+/research share <notebook-id> [status|public|private|invite <email>|docs|sheets]
 ```
 
 ## Running the Drive Subcommand
@@ -65,10 +72,13 @@ SKILL.md (router)
 ├── collect.md    — Calls NotebookLM MCP to create notebooks and add sources
 ├── analyze.md    — Calls NotebookLM MCP for Q&A, reports, audio, slides, quiz
 ├── export.md     — Calls nlm CLI to download artifacts to ~/research-output/
-├── status.md     — Reads local session files + NotebookLM MCP
+├── status.md     — Reads local session files + NotebookLM MCP (sources/artifacts/labels/share)
 ├── drive.md      — Google Drive source management (list/sync/add)
+├── media.md      — On-demand Studio artifacts (video/flashcards/mindmap/infographic/datatable)
+├── organize.md   — Source labels (manage within NotebookLM)
+├── share.md      — Public link / invite / export to Google Docs · Sheets
 └── scripts/
-    └── youtube_search.py   — yt-dlp wrapper
+    └── youtube_search.py   — yt-dlp wrapper (--save-urls writes a source-URL sidecar)
 ```
 
 **Key design rule**: `run.md` orchestrates MCP calls directly. The subcommand `.md` files are for independent use only (e.g., `/research search`, `/research collect`).
@@ -78,8 +88,11 @@ SKILL.md (router)
 | Operation | Tool |
 |-----------|------|
 | Notebook/source CRUD | MCP (`mcp__notebooklm-mcp__*`) |
-| Download/export artifacts | CLI (`nlm download`) |
-| Authentication | MCP `refresh_auth` first, then `nlm login` fallback |
+| Studio artifacts (report/video/flashcards/mindmap/infographic/data_table/audio/slides/quiz) | MCP `studio_create` → poll `studio_status` |
+| Source labels | MCP `label` / CLI `nlm label` |
+| Download artifacts | MCP `download_artifact` / CLI `nlm download <kind>` |
+| Sharing + Docs/Sheets export | CLI `nlm share` / `nlm export` (or MCP `notebook_share_*` / `export_artifact`) |
+| Authentication | MCP `refresh_auth` first, then `nlm login` fallback (v0.7.x: `stale` = expired, `unverified` = transient) |
 
 ### Session State
 
@@ -109,15 +122,24 @@ All skill prompts, default Q&A queries, note titles, and generated artifacts def
 | `learning` | report.md + podcast.mp3 + quiz.json |
 | `presentation` | report.md + slides.pptx |
 | `deep-dive` | report.md (adds web sources via `research_start`) |
+| `study-pack` | report.md + podcast.mp3 + flashcards.json + mindmap.json + quiz.json |
+| `explainer` | report.md + video.mp4 |
+| `visual-report` | report.md + infographic.png + mindmap.json + datatable.csv |
 
 ## Output Files
 
 All output goes to `~/research-output/<topic>/`:
 - `<topic>_report.md` — AI briefing document
 - `<topic>_analysis.md` — Q&A deep analysis
-- `<topic>_podcast.mp3` — AI audio (learning preset)
-- `<topic>_quiz.json` — Quiz (learning preset)
+- `<topic>_podcast.mp3` — AI audio (learning / study-pack)
+- `<topic>_quiz.json` — Quiz (learning / study-pack)
 - `<topic>_slides.pptx` — Slide deck (presentation preset)
+- `<topic>_video.mp4` — Video Overview (explainer preset)
+- `<topic>_flashcards.json` — Flashcards (study-pack)
+- `<topic>_mindmap.json` — Mind map (study-pack / visual-report; download may fail on nlm v0.7.2)
+- `<topic>_infographic.png` — Infographic (visual-report)
+- `<topic>_datatable.csv` — Data table (visual-report)
+- `source_urls.json` — sidecar mapping source titles → original video URLs (written by `--save-urls`)
 
 ## Error Handling Tiers
 

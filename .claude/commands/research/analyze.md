@@ -41,6 +41,9 @@ Per-preset mapping:
 | learning | 1 (Q&A) + 2 (report) + 4 (podcast) | chat_configure → notebook_query → studio_create(report) + studio_create(audio) |
 | deep-dive | 5 (web research) + 1 (Q&A) + 2 (report) | research_start → research_import → chat_configure → notebook_query → studio_create(report) |
 | presentation | 1 (Q&A) + 2 (report) + slides | chat_configure → notebook_query → studio_create(report) + studio_create(slides) |
+| study-pack | 1 + 2 + audio + flashcards + mind_map + quiz | chat_configure(goal="learning_guide") → notebook_query → studio_create(report/audio/flashcards/mind_map/quiz) |
+| explainer | 1 + 2 + video | chat_configure → notebook_query → studio_create(report) + studio_create(video, video_format="explainer") |
+| visual-report | 1 + 2 + infographic + mind_map + data_table | chat_configure → notebook_query → studio_create(report/infographic/mind_map/data_table) |
 
 If no preset payload is provided, fall through to Step 2 (analysis type selection).
 
@@ -58,9 +61,18 @@ Ask the user to choose the analysis type:
 | 3 | Mind map | Visualize topic structure |
 | 4 | Podcast | Conversational audio |
 | 5 | Web research | Auto-discover additional sources |
+| 6 | Video Overview | Explainer/brief/cinematic video |
+| 7 | Flashcards | Study flashcards |
+| 8 | Infographic | Single-image visual summary |
+| 9 | Data table | Structured comparison table |
 
 Enter a number, or pick "auto" to let me decide.
 ```
+
+> Types 6–9 are the rich Studio artifacts — see `media.md` for full options
+> (`/research media <id> --type <...>`). Inline they map to
+> `studio_create(artifact_type="video"|"flashcards"|"infographic"|"data_table")`
+> → poll `studio_status` → `download_artifact`.
 
 ### 3. Execute by type
 

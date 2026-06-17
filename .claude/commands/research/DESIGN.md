@@ -17,8 +17,12 @@
 ├── analyze.md                       # /research analyze <notebook-id>
 ├── export.md                        # /research export <notebook-id>
 ├── status.md                        # /research status [notebook-id]
+├── drive.md                         # /research drive list|sync|add
+├── media.md                         # /research media <id> --type ... (v0.7.2 Studio artifacts)
+├── organize.md                      # /research organize <id> (source labels, v0.7.2)
+├── share.md                         # /research share <id> (public/invite/export, v0.7.2)
 ├── scripts/
-│   └── youtube_search.py            # Symlink to the existing youtube-search script
+│   └── youtube_search.py            # yt-dlp wrapper (--save-urls writes the source-URL sidecar)
 └── references/
     ├── nlm-commands.md              # Core MCP/CLI reference
     └── workflow-examples.md         # Real-world usage scenarios
@@ -355,18 +359,28 @@ Detailed scenarios and command sequences are in `references/workflow-examples.md
 
 Phase 1 (MVP: SKILL.md, run.md, search.md, collect.md, analyze.md, status.md) and Phase 2 (export.md, references/, studio_create extensions) are done.
 
-### Phase 3: advanced features (current)
+### Phase 3: advanced features — complete
 
-| # | File | Content | Difficulty |
-|---|------|---------|------------|
-| 10 | `analyze.md` ext | research_start/import (web/Drive source discovery) | High |
-| 11 | `analyze.md` ext | quiz, flashcards, slides, video | Medium |
-| 12 | `references/workflow-examples.md` | Real scenarios + error responses | Low |
+- [x] NLM research feature wired up for auto source discovery / collection (deep-dive preset)
+- [x] Multiple content types (quiz, slides, video, flashcards, mind_map, infographic, data_table)
+- [x] Workflow examples + troubleshooting docs complete
 
-**Phase 3 done when:**
-- [ ] NLM research feature is wired up for auto source discovery / collection
-- [ ] Multiple content types (quiz, slides, video) are supported
-- [ ] Workflow examples + troubleshooting docs are complete
+### Phase 4: v0.7.2 parity — complete
+
+Targets `nlm`/`notebooklm-mcp` v0.7.2. Brings the skill to parity with the GUI:
+
+- [x] `media.md` — on-demand Studio artifacts (video/flashcards/mindmap/infographic/datatable) via `studio_create` → poll → download
+- [x] `organize.md` — source labels (`label` tool / `nlm label`); manage-within-NotebookLM
+- [x] `share.md` — public link / invite / export to Google Docs · Sheets
+- [x] New presets: `study-pack`, `explainer`, `visual-report` (run.md + analyze.md)
+- [x] `export.md` download cases for all artifact types + `nlm export` CLI
+- [x] `collect.md` advertises 18 source file types + optional post-collect auto-label
+- [x] `status.md` surfaces labels + share status; auth states (`stale`/`unverified`)
+- [x] `youtube_search.py --save-urls` writes the source-URL sidecar (real links recovery)
+
+**Known limitation:** `nlm download mind-map` fails on v0.7.2 (upstream bug); the mind map still generates. Degrades gracefully.
+
+**Future (not yet wired):** multi-notebook `batch` / `cross` / `pipeline` / `tag`.
 
 ---
 
