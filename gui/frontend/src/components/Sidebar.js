@@ -8,6 +8,7 @@ export function Sidebar({ route }) {
   return html`
     <aside class="sidebar">
       <a class="btn-new ${route.view === "new" ? "active" : ""}" href="#/new">+ New research</a>
+      <a class="nb-item home-link ${route.view === "home" ? "active" : ""}" href="#/home">🏠 Dashboard</a>
       <div class="side-label">Notebooks</div>
       <nav class="nb-list">
         ${notebooks.map((n) => {

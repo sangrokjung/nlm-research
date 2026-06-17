@@ -4,11 +4,13 @@ import { Topbar } from "./components/Topbar.js";
 import { Sidebar } from "./components/Sidebar.js";
 import { NewResearch } from "./views/NewResearch.js";
 import { Workspace } from "./views/Workspace.js";
+import { Dashboard } from "./views/Dashboard.js";
 
 function parseHash() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   if (parts[0] === "nb" && parts[1]) return { view: "nb", id: parts[1], tab: (parts[2] || "sources").toLowerCase() };
-  return { view: "new" };
+  if (parts[0] === "new") return { view: "new" };
+  return { view: "home" };
 }
 
 function App() {
@@ -30,7 +32,9 @@ function App() {
         <main class="main">
           ${route.view === "nb"
             ? html`<${Workspace} key=${route.id} id=${route.id} tab=${route.tab} />`
-            : html`<${NewResearch} />`}
+            : route.view === "new"
+              ? html`<${NewResearch} />`
+              : html`<${Dashboard} />`}
         </main>
       </div>
     </div>`;

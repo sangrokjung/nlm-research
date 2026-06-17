@@ -131,7 +131,8 @@ existing endpoint and gains thin read endpoints. See `user-flow.md` §8.
 - [x] Reused runJob/progress-log/retry/auth-state logic ported from the old `app.js`.
 - [x] Verified: static modules serve as `text/javascript`; esm.sh reachable; all 4 read endpoints return data.
 - [x] Vendored Preact/htm locally (`gui/frontend/vendor/`) + import map in `index.html` → GUI runs fully offline, no runtime CDN; single Preact instance guaranteed.
-- [ ] Polish follow-ups: source thumbnails/links, artifact download links/preview, drag-to-label, a Dashboard/home overview.
+- [x] Dashboard home view (notebook cards + totals; default landing) and source links (source title → url / YouTube title-search / notebook; "Open in NotebookLM" in the workspace header).
+- [ ] Polish follow-ups: source thumbnails, artifact preview, drag-to-label.
 
 ---
 

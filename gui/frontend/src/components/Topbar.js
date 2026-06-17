@@ -13,7 +13,7 @@ export function Topbar() {
   const [cls, label] = PILL[s.auth.state] || ["pill-unknown", "checking…"];
   return html`
     <header class="topbar">
-      <a class="brand" href="#/new">/research</a>
+      <a class="brand" href="#/home">/research</a>
       <div class="spacer"></div>
       <button class="icon-btn" title="Toggle light/dark" onClick=${toggleTheme}>
         ${s.theme === "dark" ? "☀" : "☾"}

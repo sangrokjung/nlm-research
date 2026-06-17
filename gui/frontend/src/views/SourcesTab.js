@@ -1,6 +1,15 @@
 import { html, useState, useEffect } from "../preact.js";
 import { api, apiJSON } from "../api.js";
 
+// nlm doesn't return original source URLs, so: use url if present, else a
+// YouTube title search (for youtube sources), else open the notebook.
+function sourceHref(sc, nbId) {
+  if (sc.url) return sc.url;
+  if ((sc.type || "").toLowerCase().includes("youtube"))
+    return "https://www.youtube.com/results?search_query=" + encodeURIComponent(sc.title || "");
+  return "https://notebooklm.google.com/notebook/" + nbId;
+}
+
 export function SourcesTab({ id }) {
   const [sources, setSources] = useState(null);
   const [adding, setAdding] = useState("");
@@ -35,8 +44,8 @@ export function SourcesTab({ id }) {
       ${sources.length
         ? html`<ul class="list">${sources.map((sc) => html`
             <li class="list-item">
-              <span>📄</span>
-              <div class="grow">${sc.title || sc.name || sc.id || "(source)"}</div>
+              <span>${(sc.type || "").toLowerCase().includes("youtube") ? "▶" : "📄"}</span>
+              <a class="grow src-link" href=${sourceHref(sc, id)} target="_blank" rel="noopener">${sc.title || sc.name || sc.id || "(source)"}</a>
               <span class="muted">${sc.type || ""}</span>
             </li>`)}</ul>`
         : html`<div class="muted pad">No sources yet.</div>`}

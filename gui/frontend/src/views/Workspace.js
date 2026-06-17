@@ -17,7 +17,10 @@ export function Workspace({ id, tab }) {
   return html`
     <div class="view">
       <div class="ws-head">
-        <h1>${nb ? (nb.title || nb.name || id) : id}</h1>
+        <div class="ws-head-row">
+          <h1>${nb ? (nb.title || nb.name || id) : id}</h1>
+          <a class="btn sm" href=${"https://notebooklm.google.com/notebook/" + id} target="_blank" rel="noopener">Open in NotebookLM ↗</a>
+        </div>
         <div class="muted mono">${id}</div>
       </div>
       <${Tabs} tabs=${TABS} active=${active} base=${"#/nb/" + id + "/"} />
