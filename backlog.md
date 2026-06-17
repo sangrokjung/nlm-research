@@ -93,9 +93,9 @@ sources into themed groups *inside* NotebookLM, and see it all at a glance.
 - [x] **Version floor + health check** — add `nlm ≥ 0.7.2` to prereqs; surface `nlm doctor` in `status.md`
 - [x] **`nlm skill install claude-code`** — reference in prereqs so the skill and the tool's own expert guidance stay aligned
 - [x] **Auth states** — update Tier-1 error-handling docs for v0.7.x (`stale` vs `unverified`, `error_reason`) so transient network blips aren't treated as full auth failure
-- [ ] **Sample outputs** — add a video/flashcards/infographic example under `samples/` (matches `samples/AI-agent-trends-2026/`)
-- [ ] **Long-lived MCP** — note conversation-cache env vars (`NOTEBOOKLM_CONVERSATION_TURNS_PER_NOTEBOOK`, etc.) for long-running servers
-- [ ] **Multi-notebook ops** — future epic: `batch` / `cross` / `pipeline` / `tag` workflows across notebooks
+- [x] **Sample outputs** — documented in `samples/studio-artifacts/README.md` (each artifact + generate/download command + v0.7.2 quirks). Binaries not committed: flashcards download returns empty `cards`, infographic ~4.7 MB, video multi-MB, mind-map download broken.
+- [x] **Long-lived MCP** — conversation-cache env vars + `--stateless` documented in `references/nlm-commands.md` §16 and `CLAUDE.md`.
+- [x] **Multi-notebook ops** — `batch` / `cross` / `pipeline` / `tag` documented as CLI-available in `references/nlm-commands.md` §15. Dedicated `/research` subcommand wrappers remain a future epic (not needed for parity).
 
 ---
 
@@ -110,7 +110,7 @@ remains the canonical pipeline; the GUI is an alternative driver over the same
 - [x] Backend: thin `nlm`/`youtube_search.py` process-runner; parse `nlm --json`; `localhost`-bind only. Analyze polls `nlm studio status` until the report completes before downloading (report create is async). Live-validated Search→Collect→Analyze.
 - [x] Stream progress (SSE): `POST /api/jobs/{collect|analyze|media}` + `GET /api/jobs/{id}/stream`; frontend uses EventSource for a live progress log (poll ticks emitted via wait_for_artifact on_poll). Live-validated.
 - [x] Pages mirroring subcommands — Search · Collect · Analyze · **Media · Organize · Share** · Dashboard all wired (live-validated: organize list → 3 AI labels; share status; media mindmap create+poll)
-- [ ] Upstream `nlm` bug: `nlm download mind-map` fails (artifact generates fine; report/flashcards/infographic/data-table/video downloads work). GUI degrades gracefully (completed + download error). Track for an nlm upgrade.
+- [x] **Won't-fix (upstream)** `nlm` bug: `nlm download mind-map` fails on v0.7.2 (artifact generates fine; report/flashcards/infographic/data-table/video downloads work). Handled gracefully everywhere (GUI: completed + Retry; CLI: keeps going) and documented (media.md, export.md, samples, rules). Revisit on an nlm upgrade.
 - [x] "Run preset" one-click flow (GUI equivalent of `/research run --auto`): `POST /api/jobs/run` orchestrates search→collect→analyze→preset artifacts, streaming progress. Presets: default, trend-report, study-pack, explainer, visual-report. Live-validated (default, 2 videos → report completed + Q&A).
 - [x] Auth pill — ok / **unverified (amber, re-checks every 8s)** / stale (re-login) / error; classified server-side from `nlm login --check` (transient-network markers → unverified). Shared auth with the CLI ✓
 - [x] Error-path UX — Tier-1/Tier-3 banners + **Tier-2 per-artifact Retry** buttons (Media page + Run-pipeline artifact rows re-run just the failed artifact)

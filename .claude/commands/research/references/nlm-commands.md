@@ -502,4 +502,40 @@ For `cinematic`, pass the full creative brief via `focus_prompt` (`--focus` on t
 - `stale` — genuine expiry/load failure → prompt the user to run `nlm login`.
 - `unverified` — transient network error → retry before bothering the user.
 
-> Future (not yet wired here): `nlm batch`, `nlm cross` (cross-notebook query), `nlm pipeline`, `nlm tag`.
+## 15. Multi-notebook operations (v0.7.2 — CLI)
+
+Available via the `nlm` CLI (no dedicated `/research` subcommand yet; invoke directly):
+
+```
+# Batch across notebooks
+nlm batch query      <nb1> <nb2> … "<question>"     # same question to many notebooks
+nlm batch add-source <nb1> <nb2> … --url <url>      # same source to many notebooks
+nlm batch create     "<title1>" "<title2>" …        # create several notebooks
+nlm batch studio     <nb1> <nb2> … --type <artifact>  # generate artifacts across notebooks
+nlm batch delete     <nb1> <nb2> …                  # IRREVERSIBLE
+
+# Cross-notebook (aggregated answer over multiple notebooks)
+nlm cross query <nb1> <nb2> … "<question>"
+
+# Pipelines (user-defined multi-step YAML workflows)
+nlm pipeline list
+nlm pipeline create <pipeline.yaml>
+nlm pipeline run <pipeline-name> <notebook-id>
+
+# Tags (organize whole notebooks; distinct from source labels)
+nlm tag add <nb> <tag…> ;  nlm tag remove <nb> <tag…>
+nlm tag list ;  nlm tag select "<query>"            # find notebooks relevant to a query
+```
+
+## 16. Long-lived MCP server tuning
+
+When the MCP server runs for a long time (always-on), bound its conversation cache
+to avoid unbounded RAM growth (env vars on the `nlm mcp` process):
+
+```
+NOTEBOOKLM_CONVERSATION_TURNS_PER_NOTEBOOK=<n>   # turns kept per notebook
+CONVERSATION_MAX_NOTEBOOKS=<n>                   # notebooks kept in cache
+CONVERSATION_MAX_CHARS_PER_TURN=<n>              # truncate long turns
+```
+- `nlm mcp --stateless` disables the conversation cache entirely.
+- The server picks up new tokens immediately when `nlm login` runs externally (watches the auth files).

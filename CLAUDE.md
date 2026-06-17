@@ -24,6 +24,15 @@ To register manually:
 claude mcp add -s project notebooklm-mcp -- nlm mcp
 ```
 
+> **Long-lived MCP servers**: bound the conversation cache with
+> `NOTEBOOKLM_CONVERSATION_TURNS_PER_NOTEBOOK` / `CONVERSATION_MAX_NOTEBOOKS` /
+> `CONVERSATION_MAX_CHARS_PER_TURN`, or run `nlm mcp --stateless`. See
+> `references/nlm-commands.md` §16.
+>
+> **Multi-notebook ops** (`nlm batch` / `cross` / `pipeline` / `tag`) are available via
+> the CLI today — see `references/nlm-commands.md` §15. Dedicated `/research`
+> subcommands for them are a future epic.
+
 ## Running the Research Pipeline
 
 ```bash
