@@ -127,11 +127,30 @@ select { background: var(--panel-2); border: 1px solid var(--line); color: var(-
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .list-item { display: flex; gap: 12px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
 .list-item .grow { flex: 1; }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.art-list { display: flex; flex-direction: column; gap: 10px; }
 .art { margin: 0; padding: 12px; gap: 0; }
 .art-row { display: flex; align-items: center; gap: 10px; }
 .art-type { font-weight: 600; text-transform: capitalize; flex: 1; }
 .art-err { color: var(--bad); font-size: 12px; margin-top: 8px; word-break: break-word; }
+.art-preview { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.art-preview img { max-width: 100%; border-radius: 8px; display: block; }
+.art-preview pre { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 12px; white-space: pre-wrap; max-height: 360px; overflow: auto; margin: 0; }
+
+/* Source thumbnails */
+.src-thumb { width: 56px; height: 36px; border-radius: 6px; object-fit: cover; flex: 0 0 auto; }
+.src-thumb.ph { display: flex; align-items: center; justify-content: center; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
+
+/* Drag-to-label board */
+.label-board { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.lb-col h2 { margin: 0 0 10px; }
+.src-chip { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; cursor: grab; }
+.src-chip:active { cursor: grabbing; }
+.label-drop { background: var(--panel); border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+.label-drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.label-name { font-weight: 600; }
+.label-name em { color: var(--muted); font-style: normal; font-weight: 400; }
+.label-members { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.label-members .mini { font-size: 11px; color: var(--muted); background: var(--panel-2); border-radius: 999px; padding: 2px 8px; }
 .badge { padding: 3px 9px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); }
 .badge.ok { color: var(--ok); border-color: var(--ok); }
 .badge.warn { color: var(--warn); border-color: var(--warn); }

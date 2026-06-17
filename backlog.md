@@ -132,7 +132,7 @@ existing endpoint and gains thin read endpoints. See `user-flow.md` §8.
 - [x] Verified: static modules serve as `text/javascript`; esm.sh reachable; all 4 read endpoints return data.
 - [x] Vendored Preact/htm locally (`gui/frontend/vendor/`) + import map in `index.html` → GUI runs fully offline, no runtime CDN; single Preact instance guaranteed.
 - [x] Dashboard home view (notebook cards + totals; default landing) and source links (source title → url / YouTube title-search / notebook; "Open in NotebookLM" in the workspace header).
-- [ ] Polish follow-ups: source thumbnails, artifact preview, drag-to-label.
+- [x] Source thumbnails (YouTube thumb when a URL is known, else a type icon tile), artifact **Preview** (inline image/text from the download endpoint), and **drag-to-label** (drag a source chip onto a label → `nlm label move`). Move endpoint live-validated.
 
 ---
 

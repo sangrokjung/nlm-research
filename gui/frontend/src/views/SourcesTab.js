@@ -10,6 +10,19 @@ function sourceHref(sc, nbId) {
   return "https://notebooklm.google.com/notebook/" + nbId;
 }
 
+// Real YouTube thumbnail only when a video URL/ID is available (nlm usually
+// returns url:null), otherwise a type icon tile.
+function ytThumb(url) {
+  const m = /(?:youtu\.be\/|[?&]v=)([\w-]{11})/.exec(url || "");
+  return m ? "https://img.youtube.com/vi/" + m[1] + "/mqdefault.jpg" : null;
+}
+function Thumb(sc) {
+  const t = ytThumb(sc.url);
+  if (t) return html`<img class="src-thumb" src=${t} alt="" loading="lazy" />`;
+  const icon = (sc.type || "").toLowerCase().includes("youtube") ? "▶" : "📄";
+  return html`<div class="src-thumb ph">${icon}</div>`;
+}
+
 export function SourcesTab({ id }) {
   const [sources, setSources] = useState(null);
   const [adding, setAdding] = useState("");
@@ -44,7 +57,7 @@ export function SourcesTab({ id }) {
       ${sources.length
         ? html`<ul class="list">${sources.map((sc) => html`
             <li class="list-item">
-              <span>${(sc.type || "").toLowerCase().includes("youtube") ? "▶" : "📄"}</span>
+              ${Thumb(sc)}
               <a class="grow src-link" href=${sourceHref(sc, id)} target="_blank" rel="noopener">${sc.title || sc.name || sc.id || "(source)"}</a>
               <span class="muted">${sc.type || ""}</span>
             </li>`)}</ul>`

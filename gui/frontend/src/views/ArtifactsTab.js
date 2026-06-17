@@ -41,7 +41,7 @@ export function ArtifactsTab({ id }) {
       </div>
       ${busy ? html`<${ProgressLog} lines=${lines} />` : ""}
       ${arts.length
-        ? html`<div class="cards">${arts.map((a) => html`<${ArtifactCard} a=${a} id=${id} onChange=${load} />`)}</div>`
+        ? html`<div class="art-list">${arts.map((a) => html`<${ArtifactCard} a=${a} id=${id} onChange=${load} />`)}</div>`
         : html`<div class="muted pad">No artifacts yet — generate one above.</div>`}
     </div>`;
 }
