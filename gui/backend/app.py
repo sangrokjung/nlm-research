@@ -8,6 +8,7 @@ so the UI shape is complete and the wiring is obvious for the next iteration.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import tempfile
 
@@ -369,6 +370,14 @@ def do_run(req: RunRequest, emit=_noop) -> dict:
         raise ToolError(f"no videos found for “{req.topic}”")
     emit({"type": "progress", "msg": f"[search] {len(urls)} videos selected."})
 
+    # Persist real video URLs keyed by normalized title so the Sources tab can
+    # link directly (nlm reads sources back with url=null). Sidecar only.
+    sessions.write_source_urls(
+        req.topic,
+        {sessions.norm_title(r["title"]): r["url"]
+         for r in results if r.get("title") and r.get("url")},
+    )
+
     emit({"type": "progress", "msg": "[collect] adding sources…"})
     collected = do_collect(CollectRequest(urls=urls, topic=req.topic), emit)
     notebook_id = collected["notebook_id"]
@@ -443,7 +452,21 @@ class AddSourceRequest(BaseModel):
 
 @app.get("/api/notebook/{nb}/sources")
 def nb_sources(nb: str) -> dict:
-    return {"sources": list_sources(nb)}
+    sources = list_sources(nb)
+    # Recover original URLs from the per-topic sidecar (matched by normalized
+    # title). Missing sidecar / no match → url stays null (title-search fallback).
+    topic = sessions.topic_for_notebook(nb)
+    url_map = sessions.read_source_urls(topic) if topic else {}
+    if url_map:
+        for s in sources:
+            if not s.get("url"):
+                url = url_map.get(sessions.norm_title(s.get("title")))
+                if url:
+                    s["url"] = url
+                    m = re.search(r"(?:youtu\.be/|[?&]v=)([\w-]{11})", url)
+                    if m:
+                        s["videoId"] = m.group(1)
+    return {"sources": sources}
 
 
 @app.get("/api/notebook/{nb}/artifacts")
